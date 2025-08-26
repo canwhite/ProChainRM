@@ -6,8 +6,6 @@ import (
 	"github.com/hyperledger/fabric-gateway/pkg/client"
 )
 
-//TODO,这里作为service层，我们还有一大部分内容需要拓展
-
 // AssetService handles interactions with the asset-transfer-basic chaincode
 type AssetService struct {
 	contract *client.Contract
@@ -73,5 +71,16 @@ func (s *AssetService) DeleteAsset(id string) error {
 		return fmt.Errorf("failed to delete asset %s: %w", id, err)
 	}
 	fmt.Printf("✓ Asset %s deleted successfully\n", id)
+	return nil
+}
+
+// TransferAsset transfers ownership of an asset
+func (s *AssetService) TransferAsset(id, newOwner string) error {
+	fmt.Printf("Transferring asset %s to %s...\n", id, newOwner)
+	_, err := s.contract.SubmitTransaction("TransferAsset", id, newOwner)
+	if err != nil {
+		return fmt.Errorf("failed to transfer asset %s: %w", id, err)
+	}
+	fmt.Printf("✓ Asset %s transferred to %s successfully\n", id, newOwner)
 	return nil
 }
