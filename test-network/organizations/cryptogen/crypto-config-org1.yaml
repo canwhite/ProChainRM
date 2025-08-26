@@ -1,0 +1,116 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+# ---------------------------------------------------------------------------
+# "PeerOrgs" - Definition of organizations managing peer nodes
+# ---------------------------------------------------------------------------
+PeerOrgs:
+  # ---------------------------------------------------------------------------
+  # Org1
+  # ---------------------------------------------------------------------------
+  - Name: Org1
+    Domain: org1.example.com
+    # EnableNodeOUs: true 这一行的作用是启用节点OU（组织单元）功能。
+    # 启用后，Fabric 会根据证书中的 OU 字段自动区分不同类型的身份（如 client、peer、admin、orderer），
+    # 这样可以更细粒度地进行权限控制和身份识别，是生产环境推荐的配置。
+
+    # client、peer、admin、orderer 这几个身份的区别与作用如下：
+    # - client：代表客户端用户身份，主要用于提交交易、查询账本等操作。client 身份通常用于应用程序或终端用户，不能作为节点参与区块链网络共识。
+    # - peer：代表对等节点身份。peer 节点负责存储账本、执行链码、背书交易等，是区块链网络的核心组成部分。peer 身份用于节点证书，不能用于管理或客户端操作。
+    # - admin：代表组织管理员身份。admin 拥有管理组织、节点、证书等权限，能进行如通道配置、策略修改等敏感操作。admin 身份一般只授予极少数管理人员。
+    # - orderer：代表排序节点身份。orderer 节点负责接收交易、排序并打包成区块，是区块链网络的“出块者”。orderer 身份仅用于排序服务节点，不能用于业务交易或管理操作。
+    # 这些身份的划分，使得 Hyperledger Fabric 能够实现细粒度的权限控制和安全隔离，确保不同角色只能执行各自允许的操作，提升了系统的安全性和可维护性。
+    # 当然可以！比如说，假设你有如下配置：
+    #
+    # EnableNodeOUs: true
+    #
+    # 这表示你启用了节点OU功能。假设你有一个peer节点和一个admin用户：
+    #
+    # - peer节点的证书里 OU 字段会是 "peer"
+    # - admin用户的证书里 OU 字段会是 "admin"
+    #
+    # 这样，Fabric 就能自动识别哪个证书属于peer节点，哪个属于admin用户。
+    #
+    # 举例说明：
+    #
+    # 1. 你用peer节点证书去背书交易，Fabric会识别这是peer节点，允许其参与背书。
+    # 2. 你用admin证书去做通道配置更新，Fabric会识别这是admin身份，允许其进行管理操作。
+    # 3. 如果你用client证书去尝试做peer节点的操作，Fabric会拒绝，因为OU不匹配。
+    #
+    # 这种机制就像给每个人发了不同颜色的工牌，门禁系统会自动识别工牌颜色，决定你能进哪扇门。
+    # 实际上，"peer"、"admin"、"client"、"orderer" 这些 OU（组织单元）都包含在证书体系里，是为了实现更细粒度的身份区分和权限控制。
+    #
+    # 每个 OU 都代表一种专门的身份类型，Fabric 会根据证书里的 OU 字段自动识别持有者的角色：
+    # - "peer"：专属于 peer 节点（对等节点），只有 peer 节点的证书 OU 字段才是 peer，代表该证书只能用于节点进程。
+    # - "admin"：专属于组织管理员，只有 admin 用户的证书 OU 字段才是 admin，代表该证书拥有管理权限（如通道配置、策略修改等）。
+    # - "client"：专属于普通客户端用户，只有 client 用户的证书 OU 字段才是 client，代表该证书只能用于提交交易、查询账本等普通操作。
+    # - "orderer"：专属于排序节点，只有 orderer 节点的证书 OU 字段才是 orderer，代表该证书只能用于排序服务节点。
+    #
+    # 这些身份是互斥的：一个证书只会有一个主要 OU 字段（peer、admin、client、orderer 之一），
+    # 这样 Fabric 就能根据证书里的 OU 字段，自动判断你是 peer、admin、client 还是 orderer，从而决定你能做哪些操作。
+    #
+    # 例如：
+    # - 你用 peer 节点证书只能作为节点参与背书，不能做管理操作。
+    # - 你用 admin 证书可以做管理操作，但不能作为节点进程启动。
+    # - 你用 client 证书只能作为普通用户提交交易，不能参与背书或管理。
+    # - 你用 orderer 证书只能作为排序节点进程启动。
+    #
+    # 这种机制就像给每个人发了不同颜色的工牌，每种颜色只能进特定的门，确保了安全和权限隔离。
+    #
+    # 那如何确定证书拥有哪种 OU 字段呢？
+    # 其实是在生成证书时，由 cryptogen 工具根据配置文件的结构自动决定的：
+    # - 在 PeerOrgs 下定义的节点（如 peer0、peer1）生成的证书，OU 字段会被设置为 "peer"。
+    # - 在 PeerOrgs 下定义的 Admin 用户，证书 OU 字段会被设置为 "admin"。
+    # - 在 PeerOrgs 下定义的普通用户（Users），证书 OU 字段会被设置为 "client"。
+    # - 在 OrdererOrgs 下定义的节点，证书 OU 字段会被设置为 "orderer"。
+    #
+    # 你只需要在配置文件里正确写好 PeerOrgs、OrdererOrgs、Users、Admin 等结构，cryptogen 会自动为每个身份生成带有对应 OU 字段的证书，无需手动指定。
+
+    EnableNodeOUs: true
+    # ---------------------------------------------------------------------------
+    # "Specs"
+    # ---------------------------------------------------------------------------
+    # Uncomment this section to enable the explicit definition of hosts in your
+    # configuration.  Most users will want to use Template, below
+    #
+    # Specs is an array of Spec entries.  Each Spec entry consists of two fields:
+    #   - Hostname:   (Required) The desired hostname, sans the domain.
+    #   - CommonName: (Optional) Specifies the template or explicit override for
+    #                 the CN.  By default, this is the template:
+    #
+    #                              "{{.Hostname}}.{{.Domain}}"
+    #
+    #                 which obtains its values from the Spec.Hostname and
+    #                 Org.Domain, respectively.
+    # ---------------------------------------------------------------------------
+    #   - Hostname: foo # implicitly "foo.org1.example.com"
+    #     CommonName: foo27.org5.example.com # overrides Hostname-based FQDN set above
+    #   - Hostname: bar
+    #   - Hostname: baz
+    # ---------------------------------------------------------------------------
+    # "Template"
+    # ---------------------------------------------------------------------------
+    # Allows for the definition of 1 or more hosts that are created sequentially
+    # from a template. By default, this looks like "peer%d" from 0 to Count-1.
+    # You may override the number of nodes (Count), the starting index (Start)
+    # or the template used to construct the name (Hostname).
+    #
+    # Note: Template and Specs are not mutually exclusive.  You may define both
+    # sections and the aggregate nodes will be created for you.  Take care with
+    # name collisions
+    # ---------------------------------------------------------------------------
+    Template:
+      Count: 1
+      SANS:
+        - localhost
+      # Start: 5
+      # Hostname: {{.Prefix}}{{.Index}} # default
+    # ---------------------------------------------------------------------------
+    # "Users"
+    # ---------------------------------------------------------------------------
+    # Count: The number of user accounts _in addition_ to Admin
+    # ---------------------------------------------------------------------------
+    Users:
+      Count: 1
