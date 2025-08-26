@@ -26,23 +26,16 @@ type Asset struct {
 // InitLedger adds a base set of assets to the ledger
 // ctx（contractapi.TransactionContextInterface）是Fabric链码中用于与账本交互的上下文对象，常用方法有：
 
-
 // 1. GetStub()：获取ChaincodeStubInterface对象，进一步操作账本（如PutState、GetState、DelState等）。
 // 2. GetClientIdentity()：获取ClientIdentity对象，可用于获取调用者的身份信息（如ID、MSPID、证书等）。
 // 3. GetStub().GetState(key string)：根据key从账本中读取数据。
 // 4. GetStub().PutState(key string, value []byte)：将数据写入账本。
 // 5. GetStub().DelState(key string)：根据key删除账本中的数据。
-
 // 6. GetStub().GetTxID()：获取当前交易的ID。
 // 7. GetStub().GetChannelID()：获取当前通道ID。
-
 // 8. GetStub().GetCreator()：获取交易发起者的证书信息。
 // 9. GetStub().GetFunctionAndParameters()：获取调用的函数名和参数。
-
-
 // 10. GetStub().SetEvent(name string, payload []byte)：设置链码事件。
-
-
 // 11. GetStub().GetHistoryForKey(key string)：获取某个key的历史变更记录。
 // 12. GetStub().GetStateByRange(startKey, endKey string)：按范围查询账本数据。
 // 13. GetStub().GetQueryResult(query string)：执行富查询（CouchDB）。
