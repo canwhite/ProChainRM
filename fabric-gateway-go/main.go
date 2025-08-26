@@ -38,6 +38,12 @@ func main() {
 	// Demonstrate chaincode operations
 	fmt.Println("\n📋 Asset Management Operations:")
 
+	// Create a new asset
+	err = assetService.CreateAsset("asset1", "purple", "8", "Alice", "900")
+	if err != nil {
+		log.Printf("Failed to create asset: %v", err)
+	}
+
 	// Query all assets
 	allAssets, err := assetService.GetAllAssets()
 	if err != nil {
@@ -52,12 +58,6 @@ func main() {
 		log.Printf("Failed to read asset: %v", err)
 	} else {
 		fmt.Printf("Asset details: %s\n", asset)
-	}
-
-	// Create a new asset
-	err = assetService.CreateAsset("asset7", "purple", "8", "Alice", "900")
-	if err != nil {
-		log.Printf("Failed to create asset: %v", err)
 	}
 
 	// Query again to see new asset

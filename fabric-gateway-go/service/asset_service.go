@@ -6,6 +6,8 @@ import (
 	"github.com/hyperledger/fabric-gateway/pkg/client"
 )
 
+//TODO,这里作为service层，我们还有一大部分内容需要拓展
+
 // AssetService handles interactions with the asset-transfer-basic chaincode
 type AssetService struct {
 	contract *client.Contract
@@ -19,17 +21,6 @@ func NewAssetService(gateway *client.Gateway) *AssetService {
 	return &AssetService{
 		contract: contract,
 	}
-}
-
-// InitLedger initializes the ledger with sample assets
-func (s *AssetService) InitLedger() error {
-	fmt.Println("Submitting InitLedger transaction...")
-	_, err := s.contract.SubmitTransaction("InitLedger")
-	if err != nil {
-		return fmt.Errorf("failed to init ledger: %w", err)
-	}
-	fmt.Println("✓ Ledger initialized successfully")
-	return nil
 }
 
 // CreateAsset creates a new asset on the ledger
