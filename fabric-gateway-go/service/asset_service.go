@@ -14,6 +14,7 @@ type AssetService struct {
 // NewAssetService creates a new asset service instance
 func NewAssetService(gateway *client.Gateway) *AssetService {
 	network := gateway.GetNetwork("mychannel")
+	//depend on network or we can say that client make conversations with blockchain by http2
 	contract := network.GetContract("basic")
 
 	return &AssetService{

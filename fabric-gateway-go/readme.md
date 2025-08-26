@@ -220,3 +220,109 @@ gateway, err := client.Connect(id, client.WithSign(sign), client.WithClientConne
 - 完整的资产管理系统
 - 详细的代码注释
 - 一站式开发体验
+
+## 🔊 事件监听功能 (Event Service)
+
+本项目新增了完整的事件监听功能，可以实时监听asset-transfer-events链码的所有事件。
+
+### 📋 EventService 使用说明
+
+#### 1. 基本用法
+
+```go
+// 创建事件服务
+eventService := service.NewEventService(gateway)
+
+// 启动事件监听
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+
+err := eventService.StartEventListening(ctx)
+if err != nil {
+    log.Printf("Failed to start event listening: %v", err)
+}
+```
+
+#### 2. 支持的事件类型
+
+| 事件名称 | 触发条件 | 示例输出 |
+|----------|----------|----------|
+| **CreateAsset** | 创建新资产时 | `<-- Chaincode event received: CreateAsset - {"ID": "asset1", "Color": "blue", ...}` |
+| **UpdateAsset** | 更新资产信息时 | `<-- Chaincode event received: UpdateAsset - {"ID": "asset1", "Color": "red", ...}` |
+| **DeleteAsset** | 删除资产时 | `<-- Chaincode event received: DeleteAsset - {"ID": "asset1", "Color": "blue", ...}` |
+| **TransferAsset** | 转移资产所有权时 | `<-- Chaincode event received: TransferAsset - {"ID": "asset1", "Owner": "Bob", ...}` |
+
+#### 3. 监听特定事件
+
+```go
+// 只监听特定类型的事件
+err := eventService.ListenForSpecificEvents(ctx, []string{"CreateAsset", "TransferAsset"})
+```
+
+#### 4. 事件格式
+
+事件数据采用JSON格式，包含完整的资产信息：
+```json
+{
+  "ID": "asset123",
+  "Color": "blue",
+  "Size": 10,
+  "Owner": "Alice",
+  "AppraisedValue": 100
+}
+```
+
+#### 5. 运行示例
+
+```bash
+# 启动程序后，执行链码操作会自动触发事件
+🚀 Starting Asset Management Client...
+🎧 Starting event listener...
+
+📋 Asset Management Operations:
+Creating asset asset1...
+✓ Asset asset1 created successfully
+
+<-- Chaincode event received: CreateAsset - {
+  "ID": "asset1",
+  "Color": "purple",
+  "Size": 8,
+  "Owner": "Alice",
+  "AppraisedValue": 900
+}
+
+<-- Chaincode event received: UpdateAsset - {
+  "ID": "asset1",
+  "Color": "blue",
+  "Size": 10,
+  "Owner": "Alice",
+  "AppraisedValue": 1200
+}
+```
+
+### 🔧 技术实现
+
+#### EventService 结构
+```go
+type EventService struct {
+    network *client.Network
+}
+```
+
+#### 核心方法
+- `StartEventListening(ctx context.Context) error` - 启动所有事件的监听
+- `ListenForSpecificEvents(ctx context.Context, eventNames []string) error` - 监听指定事件类型
+- `formatJSON(data []byte) string` - 格式化JSON输出
+
+#### 使用场景
+- **实时监控**：实时跟踪链上资产变化
+- **审计追踪**：记录所有资产操作历史
+- **业务集成**：触发外部系统响应
+- **调试开发**：验证链码执行结果
+
+### 🎯 开发建议
+
+1. **启动时机**：建议在程序初始化时就启动事件监听
+2. **错误处理**：监听失败不会影响主业务流程
+3. **资源管理**：使用context控制监听的停止
+4. **性能考虑**：事件监听是轻量级操作，不会影响性能

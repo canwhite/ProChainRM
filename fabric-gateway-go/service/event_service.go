@@ -16,6 +16,7 @@ type EventService struct {
 
 // NewEventService creates a new event service instance
 func NewEventService(gateway *client.Gateway) *EventService {
+	//get network from gateWay
 	network := gateway.GetNetwork("mychannel")
 
 	return &EventService{
@@ -69,6 +70,7 @@ func (es *EventService) ListenForSpecificEvents(ctx context.Context, eventNames 
 // formatJSON formats JSON data with proper indentation
 func formatJSON(data []byte) string {
 	var result bytes.Buffer
+	//两者合成一步就很ok呀
 	if err := json.Indent(&result, data, "", "  "); err != nil {
 		return string(data)
 	}
