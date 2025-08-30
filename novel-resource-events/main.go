@@ -7,6 +7,7 @@ import (
 	"novel-resource-events/chaincode"
 )
 
+
 func main() {
 	novelContract := new(chaincode.SmartContract)
 	chaincode, err := contractapi.NewChaincode(novelContract)
@@ -14,6 +15,7 @@ func main() {
 		log.Panicf("Error creating novel chaincode: %v", err)
 	}
 
+	//看到了chaincode.Start
 	if err := chaincode.Start(); err != nil {
 		log.Panicf("Error starting novel chaincode: %v", err)
 	}

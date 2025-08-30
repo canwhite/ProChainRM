@@ -251,5 +251,80 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 }
 
 
+//增
+func (s *SmartContract)CreateUserCredit(ctx contractapi.TransactionContextInterface, userId string , credit int, totalUsed int, totalRecharge int) error{
+
+	exists, err := s.UserCreditExists(ctx, userId)
+	if err != nil{
+		//我采用最小错误包装
+		return fmt.Errorf("judge exists failed:%v",err)
+	}
+	if exists{
+		return fmt.Errorf("user credit with ID %s already exists", userId)
+	}
+
+	//获取当前时间
+	currentTime := time.Now()
+	//这里设置为这样，主要是因为时间戳格式
+	currentTimeStr := currentTime.Format("2006-01-02 15:04:05")
+	// timestamp := currentTime.Unix()      // 秒级时间戳
+	// currentTimestamp := currentTime.UnixMilli() // 毫秒级时间戳
+
+	userCredit := &UserCredit{
+		UserID:userId,
+		Credit:credit,
+		TotalUsed:totalUsed,
+		TotalRecharge:totalRecharge,
+		CreatedAt:currentTimeStr,
+		UpdatedAt:"",//如果要设定为nil，需要做字符串指针，因为指针类型 在 Go 中本质上是一个内存地址值，而 nil 表示空指针（即不指向任何内存地址）。
+	}
+	
+	//这里默认取地址了
+	userCreditJSON,err := json.Marshal(userCredit)
+	if err != nil{
+		return fmt.Errorf("marshal failed:%v",err)
+	}
+	// 是的，PutState 只会返回 error，如果没有错误就是存储成功，不需要返回其他内容。
+	err =  ctx.GetStub().PutState(userId,userCreditJSON)
+
+	if err != nil{
+		return fmt.Errorf("put state failed:%v",err)
+	}
+	return nil
+}
+
+//删,
+func (s *SmartContract)DeleteUserCredit(ctx contextapi.TransactionContextInterface, userId string)error{
+	//TODO,
+}
+
+//改,
+func (s *SmartContract)UpdateUserCredit(ctx contextapi.TransactionContextInterface,userId string , credit int, totalUsed int, totalRecharge string)(*UserCredit,error){
+	//TODO,
+}
+
+//查,
+func (s *SmartContract)ReadUserCredit(ctx contextapi.TransactionContextInterface,userId)(*UserCredit,error){
+	//TODO,
+
+}
+
+//多个查
+func (s *SmartContract)GetAllUserCredits(ctx contextapi.TransactionContextInterface)([]*UserCredit,error){
+	//TODO,
+}
+
+
+//先添加辅助函数
+func (s *SmartContract)UserCreditExists(ctx contractapi.TransactionContextInterface,userId string)(bool,error){
+	userCreditJSON,err := ctx.GetStub().GetState(userId)
+	if err != nil{
+		return nil,err
+	}
+	return userCreditJSON != nil,nil
+}
+
 //TODO. implements some methods of token
+
+
 
