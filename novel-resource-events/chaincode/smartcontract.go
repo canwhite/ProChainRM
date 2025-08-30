@@ -279,7 +279,7 @@ func (s *SmartContract)CreateUserCredit(ctx contractapi.TransactionContextInterf
 		UpdatedAt:"",//如果要设定为nil，需要做字符串指针，因为指针类型 在 Go 中本质上是一个内存地址值，而 nil 表示空指针（即不指向任何内存地址）。
 	}
 	
-	//这里默认取地址了
+	//这里默认取地址了,如果只有err可以直接=，然后重复利用声明的这个err
 	userCreditJSON,err := json.Marshal(userCredit)
 	if err != nil{
 		return fmt.Errorf("marshal failed:%v",err)
@@ -294,8 +294,22 @@ func (s *SmartContract)CreateUserCredit(ctx contractapi.TransactionContextInterf
 }
 
 //删,
-func (s *SmartContract)DeleteUserCredit(ctx contextapi.TransactionContextInterface, userId string)error{
-	//TODO,
+func (s *SmartContract)DeleteUserCredit(ctx contractapi.TransactionContextInterface, userId string)error{
+	//先验证是否存在
+	exists,err := s.UserCreditExists(ctx,userId)
+	if err != nil{
+		return fmt.Errorf("judge existing failed:%v",err)
+	}
+	if !exists{
+		return fmt.Errorf("%s is not existed",userId)
+	}
+
+	//最后我们去删除	
+	err = ctx.GetStub().DelState(userId)
+	if err != nil{
+		return fmt.Errorf("del failed:%v",err)
+	}
+	return nil
 }
 
 //改,
