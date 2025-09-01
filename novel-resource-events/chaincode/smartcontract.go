@@ -64,7 +64,7 @@ func (s *SmartContract) CreateNovel(ctx contractapi.TransactionContextInterface,
 		Characters:   characters,
 		Items:        items,
 		TotalScenes:  totalScenes,
-		CreatedAt:    "",
+		CreatedAt:    time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	novelJSON, err := json.Marshal(novel)
@@ -77,18 +77,16 @@ func (s *SmartContract) CreateNovel(ctx contractapi.TransactionContextInterface,
 
 //read
 func (s *SmartContract) ReadNovel(ctx contractapi.TransactionContextInterface, id string)(*Novel ,error){
-	exists, err := s.NovelExists(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("read the novel failed:%v",err)
-	}
-	if(!exists){
-		return nil, fmt.Errorf("I can not find the novel")
-	}
+
 
 	novelJSON, err := ctx.GetStub().GetState(id)
 
 	if err != nil{
 		return nil ,fmt.Errorf("the novel is not found:%v",err)
+	}
+
+	if novelJSON == nil{
+		return nil, fmt.Errorf("the novel is not found")
 	}
 
 	var novel Novel 
@@ -103,36 +101,36 @@ func (s *SmartContract) ReadNovel(ctx contractapi.TransactionContextInterface, i
 	return &novel, nil
 }
 
-//get all novels
+// GetAllNovels returns all novels from the world state
 func (s *SmartContract)GetAllNovels(ctx contractapi.TransactionContextInterface)([]*Novel,error){
-   resultsIterator,err := ctx.GetStub().GetStateByRange("","")
+   resultsIterator,err := ctx.GetStub().GetStateByRange("novel_","novel_~")
    if err != nil{
-	return nil, fmt.Errorf("获取数据失败:%v",err)
+	return nil, fmt.Errorf("failed to get state by range: %v",err)
    }
-   //iterate all,
    defer resultsIterator.Close()
 
-   //注意已经声明过了
    var novels []*Novel
    
    for resultsIterator.HasNext(){
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get next: %v", err)
 		}
-		var novel Novel
 		
-		//上边已经声明过了error，这里是复用
+		var novel Novel
 		err = json.Unmarshal(queryResponse.Value,&novel)
-
 		if err != nil{
-			return nil,err
+			// Skip non-novel data
+			continue
 		}
-
-		novels =  append(novels, &novel)
+		
+		// Check if this is actually a novel by validating required fields
+		if novel.ID != "" {
+			novels = append(novels, &novel)
+		}
    }
    return novels, nil
-} 
+}
 
 // UpdateNovel updates an existing novel in the world state
 func (s *SmartContract) UpdateNovel(ctx contractapi.TransactionContextInterface, id string, author string, storyOutline string, 
@@ -202,10 +200,10 @@ func (s *SmartContract) NovelExists(ctx contractapi.TransactionContextInterface,
 
 // 初始测试函数，一次性初始化多个小说对象
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) (string, error) {
-	//能用值就用值
+	//设置前缀
 	novels := []Novel{
 		{
-			ID:           "test-novel-001",
+			ID:           "novel_001",
 			Author:       "测试作者1",
 			StoryOutline: "这是第一个初始测试小说的大纲。",
 			Subsections:  "第一章,第二章",
@@ -215,7 +213,7 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 			CreatedAt:    time.Now().Format("2006-01-02 15:04:05"),
 		},
 		{
-			ID:           "test-novel-002",
+			ID:           "novel_002",
 			Author:       "测试作者2",
 			StoryOutline: "这是第二个初始测试小说的大纲。",
 			Subsections:  "序章,终章",
@@ -225,7 +223,7 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 			CreatedAt:    time.Now().Format("2006-01-02 15:04:05"),
 		},
 		{
-			ID:           "test-novel-003",
+			ID:           "novel_003",
 			Author:       "测试作者3",
 			StoryOutline: "这是第三个初始测试小说的大纲。",
 			Subsections:  "开篇,高潮,结尾",
@@ -245,6 +243,33 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 		if err != nil {
 			return "", fmt.Errorf("保存测试小说 %s 失败: %v", novel.ID, err)
 		}
+	}
+
+	//设置前缀
+	usercredits := []UserCredit{
+		{
+			UserID:           "usercredit_001",
+			Credit:           100,
+			TotalUsed:        0,
+			TotalRecharge:    0,
+			CreatedAt:        time.Now().Format("2006-01-02 15:04:05"),
+		},
+		{
+			UserID:           "usercredit_001",
+			Credit:           200,
+			TotalUsed:        0,
+			TotalRecharge:    0,
+			CreatedAt:        time.Now().Format("2006-01-02 15:04:05"),
+		},
+	}
+	
+	for _, userCredit := range usercredits {
+		//marshal
+		userCreditJSON, err := json.Marshal(userCredit)
+		if err != nil {
+			return "", fmt.Errorf("marshal 测试用户信用 %s 失败: %v", userCredit.UserID, err)
+		}
+		err = ctx.GetStub().PutState(userCredit.UserID, userCreditJSON)
 	}
 
 	return "多个初始测试小说已成功写入区块链", nil
@@ -313,19 +338,86 @@ func (s *SmartContract)DeleteUserCredit(ctx contractapi.TransactionContextInterf
 }
 
 //改,
-func (s *SmartContract)UpdateUserCredit(ctx contextapi.TransactionContextInterface,userId string , credit int, totalUsed int, totalRecharge string)(*UserCredit,error){
-	//TODO,
+func (s *SmartContract)UpdateUserCredit(ctx contractapi.TransactionContextInterface,userId string , credit int, totalUsed int, totalRecharge int)(*UserCredit,error){	
+	existingUserCredit,err := s.ReadUserCredit(ctx,userId)
+	if err != nil{
+		return nil,fmt.Errorf("read failed:%v",err)
+	}
+	if existingUserCredit == nil{
+		return nil,fmt.Errorf("%s is not existed",userId)
+	}
+
+	// 是的，这里相当于声明并初始化了一个UserCredit指针，updatedUserCredit 指向了一个新的 UserCredit 结构体实例，并且字段已经被赋值。
+	updatedUserCredit := &UserCredit{
+		//用原来的UserId，UserID不变
+		UserID:existingUserCredit.UserID,
+		Credit:credit,
+		TotalUsed:totalUsed,
+		TotalRecharge:totalRecharge,
+		CreatedAt:existingUserCredit.CreatedAt,
+		UpdatedAt: time.Now().Format("2006-01-02 15:04:05"),
+	}
+	
+	//更新，还是需要和create的时候保持一致，marshal转化为json，再putState
+	updatedUserCreditJSON,err := json.Marshal(updatedUserCredit)
+	if err != nil{
+		return nil,fmt.Errorf("marshal failed:%v",err)
+	}
+	err = ctx.GetStub().PutState(userId,updatedUserCreditJSON)
+	if err != nil{
+		return nil,fmt.Errorf("put state failed:%v",err)
+	}
+	return updatedUserCredit,nil
 }
 
 //查,
-func (s *SmartContract)ReadUserCredit(ctx contextapi.TransactionContextInterface,userId)(*UserCredit,error){
-	//TODO,
-
+func (s *SmartContract)ReadUserCredit(ctx contractapi.TransactionContextInterface,userId string)(*UserCredit,error){
+	//直接获取
+	userCreditJSON,err := ctx.GetStub().GetState(userId)
+	if err != nil{
+		return nil,fmt.Errorf("read failed:%v",err)
+	}
+	if userCreditJSON == nil{
+		return nil,fmt.Errorf("%s is not existed",userId)
+	}
+	var userCredit UserCredit
+	//用指针做操作最重要的作用是为了写
+	err = json.Unmarshal(userCreditJSON,&userCredit)
+	if err != nil{
+		return nil,fmt.Errorf("unmarshal failed:%v",err)
+	}
+	//因为返回值定义的是指针，所以可以直接返回指针，使用的时候也很方便，可以直接用，因为可以自动解引用
+	return &userCredit,nil
 }
 
 //多个查
-func (s *SmartContract)GetAllUserCredits(ctx contextapi.TransactionContextInterface)([]*UserCredit,error){
-	//TODO,
+func (s *SmartContract)GetAllUserCredits(ctx contractapi.TransactionContextInterface)([]*UserCredit,error){
+	
+	resultsIterator,err := ctx.GetStub().GetStateByRange("usercredit_", "usercredit_~")
+	if err != nil{
+		return nil,fmt.Errorf("get state by range failed:%v",err)
+	}
+
+	defer resultsIterator.Close()
+	
+	var userCredits []*UserCredit
+	
+	//因为先判断了HasNext，所以我们可以直接从Next中取值
+	for resultsIterator.HasNext(){
+		queryResponse, err := resultsIterator.Next()
+		if err != nil{
+			return nil,fmt.Errorf("get next failed:%v",err)
+		}
+		var userCredit UserCredit
+		err = json.Unmarshal(queryResponse.Value,&userCredit)
+		if err != nil{
+			return nil,fmt.Errorf("unmarshal failed:%v",err)
+		}
+		userCredits = append(userCredits,&userCredit)
+	}
+	
+	//确保没有nil
+	return userCredits,nil
 }
 
 
@@ -333,7 +425,7 @@ func (s *SmartContract)GetAllUserCredits(ctx contextapi.TransactionContextInterf
 func (s *SmartContract)UserCreditExists(ctx contractapi.TransactionContextInterface,userId string)(bool,error){
 	userCreditJSON,err := ctx.GetStub().GetState(userId)
 	if err != nil{
-		return nil,err
+		return false,err
 	}
 	return userCreditJSON != nil,nil
 }
