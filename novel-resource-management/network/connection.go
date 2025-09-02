@@ -80,3 +80,10 @@ func NewSign() identity.Sign {
 	return sign
 }
 
+/** 
+反正都需要一个x509证书;
+then一个通过pool new一个NewClientTLSFromCert
+一个new一个NewX509Identity
+一个new一个NewPrivateKeySign
+*/
+
