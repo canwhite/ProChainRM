@@ -253,13 +253,15 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 			TotalUsed:        0,
 			TotalRecharge:    0,
 			CreatedAt:        time.Now().Format("2006-01-02 15:04:05"),
+			UpdatedAt:        time.Now().Format("2006-01-02 15:04:05"),
 		},
 		{
-			UserID:           "usercredit_001",
+			UserID:           "usercredit_002",
 			Credit:           200,
 			TotalUsed:        0,
 			TotalRecharge:    0,
 			CreatedAt:        time.Now().Format("2006-01-02 15:04:05"),
+			UpdatedAt:        time.Now().Format("2006-01-02 15:04:05"),
 		},
 	}
 	
@@ -301,7 +303,7 @@ func (s *SmartContract)CreateUserCredit(ctx contractapi.TransactionContextInterf
 		TotalUsed:totalUsed,
 		TotalRecharge:totalRecharge,
 		CreatedAt:currentTimeStr,
-		UpdatedAt:"",//如果要设定为nil，需要做字符串指针，因为指针类型 在 Go 中本质上是一个内存地址值，而 nil 表示空指针（即不指向任何内存地址）。
+		UpdatedAt:currentTimeStr, // Set UpdatedAt same as CreatedAt for new records
 	}
 	
 	//这里默认取地址了,如果只有err可以直接=，然后重复利用声明的这个err
@@ -413,6 +415,12 @@ func (s *SmartContract)GetAllUserCredits(ctx contractapi.TransactionContextInter
 		if err != nil{
 			return nil,fmt.Errorf("unmarshal failed:%v",err)
 		}
+		
+		// Ensure UpdatedAt is not empty for schema compliance
+		if userCredit.UpdatedAt == "" {
+			userCredit.UpdatedAt = userCredit.CreatedAt
+		}
+		
 		userCredits = append(userCredits,&userCredit)
 	}
 	
