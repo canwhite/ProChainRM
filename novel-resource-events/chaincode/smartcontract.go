@@ -72,6 +72,8 @@ func (s *SmartContract) CreateNovel(ctx contractapi.TransactionContextInterface,
 		return fmt.Errorf("failed to marshal novel: %v", err)
 	}
 
+	//setEvent
+	ctx.GetStub().SetEvent("CreateNovel", novelJSON)
 	return ctx.GetStub().PutState(id, novelJSON)
 }
 
@@ -168,22 +170,28 @@ func (s *SmartContract) UpdateNovel(ctx contractapi.TransactionContextInterface,
 	if err != nil {
 		return fmt.Errorf("failed to marshal novel: %v", err)
 	}
-
+	//setEvent
+	ctx.GetStub().SetEvent("UpdateNovel", novelJSON)
 	// Save to world state，这个是需要key-value
 	return ctx.GetStub().PutState(id, novelJSON)
 }
 
 //delete novel
 func (s *SmartContract)DeleteNovel(ctx contractapi.TransactionContextInterface , id string) error{
-	isExisting,err := s.NovelExists(ctx, id)
+	// isExisting,err := s.NovelExists(ctx, id)
+	novelJSON, err := s.ReadNovel(ctx, id)
 	if err != nil{
 		return fmt.Errorf("failed to get novel:%v",err)
 	}
-	if(!isExisting){
-		//todo, this object 
-		return fmt.Errorf("the novel is not existed")
+	if novelJSON == nil{
+		return fmt.Errorf("the novel is not found")
 	}
-
+	//setEvent
+	novelJSONBytes, err := json.Marshal(novelJSON)
+	if err != nil {
+		return fmt.Errorf("failed to marshal novel for event: %v", err)
+	}
+	ctx.GetStub().SetEvent("DeleteNovel", novelJSONBytes)
 	return ctx.GetStub().DelState(id)
 }
 
@@ -317,18 +325,22 @@ func (s *SmartContract)CreateUserCredit(ctx contractapi.TransactionContextInterf
 	if err != nil{
 		return fmt.Errorf("put state failed:%v",err)
 	}
+	//setEvent
+	ctx.GetStub().SetEvent("CreateUserCredit", userCreditJSON)
+
 	return nil
 }
 
 //删,
 func (s *SmartContract)DeleteUserCredit(ctx contractapi.TransactionContextInterface, userId string)error{
 	//先验证是否存在
-	exists,err := s.UserCreditExists(ctx,userId)
-	if err != nil{
-		return fmt.Errorf("judge existing failed:%v",err)
+	// 先通过ReadUserCredit方法读取，再判断
+	userCreditJSON, err := s.ReadUserCredit(ctx, userId)
+	if err != nil {
+		return fmt.Errorf("读取用户积分信息失败: %v", err)
 	}
-	if !exists{
-		return fmt.Errorf("%s is not existed",userId)
+	if userCreditJSON == nil {
+		return fmt.Errorf("用户 %s 不存在", userId)
 	}
 
 	//最后我们去删除	
@@ -336,6 +348,13 @@ func (s *SmartContract)DeleteUserCredit(ctx contractapi.TransactionContextInterf
 	if err != nil{
 		return fmt.Errorf("del failed:%v",err)
 	}
+
+	//setEvent
+	userCreditJSONBytes, err := json.Marshal(userCreditJSON)
+	if err != nil {
+		return fmt.Errorf("failed to marshal user credit for event: %v", err)
+	}
+	ctx.GetStub().SetEvent("DeleteUserCredit", userCreditJSONBytes)
 	return nil
 }
 
@@ -365,6 +384,9 @@ func (s *SmartContract)UpdateUserCredit(ctx contractapi.TransactionContextInterf
 	if err != nil{
 		return nil,fmt.Errorf("marshal failed:%v",err)
 	}
+	
+	//setEvent
+	ctx.GetStub().SetEvent("UpdateUserCredit", updatedUserCreditJSON)
 	err = ctx.GetStub().PutState(userId,updatedUserCreditJSON)
 	if err != nil{
 		return nil,fmt.Errorf("put state failed:%v",err)

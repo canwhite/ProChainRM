@@ -7,6 +7,19 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/v2/contractapi"
 )
 
+/*
+总结：在链码开发中，SetEvent 主要适合在“增、删、改”操作时使用。
+
+1. 增（Create/Insert）：如 CreateAsset、AddXXX 等函数。因为有新数据写入账本，适合发出事件通知监听方有新资源创建。
+2. 删（Delete/Remove）：如 DeleteAsset、RemoveXXX 等函数。删除数据时，发出事件便于外部系统同步删除操作。
+3. 改（Update/Modify）：如 UpdateAsset、TransferAsset 等函数。数据被修改时，发出事件便于监听方感知数据变更。
+
+而“查（Read/Query）”操作一般不需要 SetEvent，因为它们只是读取数据，没有对账本状态产生变更。
+
+最佳实践：在每个增删改函数成功写入账本（PutState/DelState）前后，调用 ctx.GetStub().SetEvent(eventName, payload) 发出事件，eventName 可用操作类型（如 "CreateAsset"、"DeleteAsset"、"UpdateAsset"），payload 可为相关数据的 JSON。
+
+*/
+
 // SmartContract provides functions for managing an Asset
 type SmartContract struct {
 	contractapi.Contract

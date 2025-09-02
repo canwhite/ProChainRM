@@ -100,3 +100,5 @@ Gateway SDK 通过 服务发现 自动找到 orderer，不依赖 DNS 解析。�
 - CLI 命令：需要显式 DNS 解析 orderer.example.com
 
 解决方案：添加 hosts 映射或改用服务发现方式。
+
+# TODO, setEvent 还没有开始
