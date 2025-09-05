@@ -13,6 +13,7 @@ type AssetService struct {
 
 // NewAssetService creates a new asset service instance
 func NewAssetService(gateway *client.Gateway) *AssetService {
+	//他们也确实有一个通信渠道和数据的先后问题，要先获取network再获取contract
 	network := gateway.GetNetwork("mychannel")
 	//depend on network or we can say that client make conversations with blockchain by http2
 	contract := network.GetContract("basic")

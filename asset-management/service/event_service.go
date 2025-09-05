@@ -69,10 +69,13 @@ func (es *EventService) ListenForSpecificEvents(ctx context.Context, eventNames 
 
 // formatJSON formats JSON data with proper indentation
 func formatJSON(data []byte) string {
+	//bytes.Buffer：可增长的缓冲区，性能更好
 	var result bytes.Buffer
-	//两者合成一步就很ok呀
+	//&result写入目标，data源数据，""前缀，"  "缩进2空格
 	if err := json.Indent(&result, data, "", "  "); err != nil {
+		//这个是复制字节数据到新字符串
 		return string(data)
 	}
+	//这个是bytes.Buffer转换为字符串
 	return result.String()
 }
