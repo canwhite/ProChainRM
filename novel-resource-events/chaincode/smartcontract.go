@@ -192,6 +192,7 @@ func (s *SmartContract)DeleteNovel(ctx contractapi.TransactionContextInterface ,
 		return fmt.Errorf("failed to marshal novel for event: %v", err)
 	}
 	ctx.GetStub().SetEvent("DeleteNovel", novelJSONBytes)
+	//只返回了error
 	return ctx.GetStub().DelState(id)
 }
 
