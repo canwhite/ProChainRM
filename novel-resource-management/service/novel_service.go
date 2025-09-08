@@ -11,11 +11,18 @@ type NovelService struct {
 	contract *client.Contract
 }
 
-func NewNovelService(gateway *client.Gateway) *NovelService {
+func NewNovelService(gateway *client.Gateway) (*NovelService ,error){
 	network := gateway.GetNetwork("mychannel")
+	if network == nil{
+		return nil, fmt.Errorf("无法获取network对象")
+
+	}
 	//先有network，再有contract
 	contract := network.GetContract("basic")
-	return &NovelService{contract: contract}
+	if contract == nil{
+		return nil, fmt.Errorf("无法获取contract")
+	}
+	return &NovelService{contract: contract},nil 
 }
 
 //create novel
