@@ -57,6 +57,7 @@ func (s *AssetService) ReadAsset(id string) (string, error) {
 // UpdateAsset updates an existing asset
 func (s *AssetService) UpdateAsset(id, color, size, owner, value string) error {
 	fmt.Printf("Updating asset %s...\n", id)
+	
 	_, err := s.contract.SubmitTransaction("UpdateAsset", id, color, size, owner, value)
 	if err != nil {
 		return fmt.Errorf("failed to update asset %s: %w", id, err)

@@ -51,7 +51,7 @@ func (s* NovelService) UpdateNovel(id, author, storyOutline, subsections, charac
 
 //del 
 func (s* NovelService)DeleteNovel(id string)error{
-	err := s.contract.SubmitTransaction("DeleteNovel",id)
+	_,err := s.contract.SubmitTransaction("DeleteNovel",id)
 	if err != nil{
 		return fmt.Errorf("failed to delete novel %s: %w",id, err)
 	}
@@ -59,6 +59,7 @@ func (s* NovelService)DeleteNovel(id string)error{
 }
 
 
+//TODO，返回成map[string]interface{}
 //ReadNovel 读取小说信息
 func (s *NovelService)ReadNovel(id string)(string, error){
 	fmt.Printf("Reading novel %s...\n", id)

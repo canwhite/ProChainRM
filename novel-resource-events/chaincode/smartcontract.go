@@ -360,13 +360,13 @@ func (s *SmartContract)DeleteUserCredit(ctx contractapi.TransactionContextInterf
 }
 
 //改,
-func (s *SmartContract)UpdateUserCredit(ctx contractapi.TransactionContextInterface,userId string , credit int, totalUsed int, totalRecharge int)(*UserCredit,error){	
+func (s *SmartContract)UpdateUserCredit(ctx contractapi.TransactionContextInterface,userId string , credit int, totalUsed int, totalRecharge int)error{	
 	existingUserCredit,err := s.ReadUserCredit(ctx,userId)
 	if err != nil{
-		return nil,fmt.Errorf("read failed:%v",err)
+		return fmt.Errorf("read failed:%v",err)
 	}
 	if existingUserCredit == nil{
-		return nil,fmt.Errorf("%s is not existed",userId)
+		return fmt.Errorf("%s is not existed",userId)
 	}
 
 	// 是的，这里相当于声明并初始化了一个UserCredit指针，updatedUserCredit 指向了一个新的 UserCredit 结构体实例，并且字段已经被赋值。
@@ -383,16 +383,16 @@ func (s *SmartContract)UpdateUserCredit(ctx contractapi.TransactionContextInterf
 	//更新，还是需要和create的时候保持一致，marshal转化为json，再putState
 	updatedUserCreditJSON,err := json.Marshal(updatedUserCredit)
 	if err != nil{
-		return nil,fmt.Errorf("marshal failed:%v",err)
+		return fmt.Errorf("marshal failed:%v",err)
 	}
 	
 	//setEvent
 	ctx.GetStub().SetEvent("UpdateUserCredit", updatedUserCreditJSON)
 	err = ctx.GetStub().PutState(userId,updatedUserCreditJSON)
 	if err != nil{
-		return nil,fmt.Errorf("put state failed:%v",err)
+		return fmt.Errorf("put state failed:%v",err)
 	}
-	return updatedUserCredit,nil
+	return nil
 }
 
 //查,
