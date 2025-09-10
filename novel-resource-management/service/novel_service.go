@@ -60,7 +60,6 @@ func (s* NovelService)DeleteNovel(id string)error{
 }
 
 
-//TODO，返回成map[string]interface{}
 //ReadNovel 读取小说信息
 func (s *NovelService)ReadNovel(id string)(map[string]interface{}, error){
 	fmt.Printf("Reading novel %s...\n", id)
@@ -83,13 +82,23 @@ func (s *NovelService)ReadNovel(id string)(map[string]interface{}, error){
 }
 
 //get all novels
-func (s *NovelService) GetAllNovels() (string, error) {
+func (s *NovelService) GetAllNovels() ([]map[string]interface{}, error) {
 	fmt.Println("Getting all novels...")
 	
 	result, err := s.contract.EvaluateTransaction("GetAllNovels")
+
 	if err != nil {
-		return "", fmt.Errorf("failed to get all novels: %w", err)
+		return nil, fmt.Errorf("failed to get all novels: %w", err)
 	}
-	return string(result), nil
+
+	var novels []map[string]interface{}
+
+	err = json.Unmarshal(result,&novels)
+
+	if err != nil{
+		return nil, fmt.Errorf("unmarshal failed:%w",err)
+	}
+
+	return novels, nil
 }
 
