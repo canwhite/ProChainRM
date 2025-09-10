@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/hyperledger/fabric-gateway/pkg/client"
@@ -61,15 +62,24 @@ func (s* NovelService)DeleteNovel(id string)error{
 
 //TODO，返回成map[string]interface{}
 //ReadNovel 读取小说信息
-func (s *NovelService)ReadNovel(id string)(string, error){
+func (s *NovelService)ReadNovel(id string)(map[string]interface{}, error){
 	fmt.Printf("Reading novel %s...\n", id)
 	
 	result, err := s.contract.EvaluateTransaction("ReadNovel", id)
+
 	if err != nil {
-		return "", fmt.Errorf("failed to read novel %s: %w", id, err)
+		return nil, fmt.Errorf("failed to read novel %s: %w", id, err)
 	}
-	
-	return string(result), nil
+
+	//map[string]interface{}
+	var novelData map[string]interface{}
+
+	err  = json.Unmarshal(result,&novelData)
+	if err != nil{
+		return nil,fmt.Errorf("unmarshal failed:%v",err)
+	}
+
+	return novelData, nil
 }
 
 //get all novels
