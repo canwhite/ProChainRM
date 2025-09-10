@@ -1,3 +1,9 @@
+# pre
+
+./network.sh up
+
+./network.sh createChannel
+
 # 1. Set up environment variables
 
 1. 环境变量:
