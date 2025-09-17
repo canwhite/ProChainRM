@@ -19,7 +19,7 @@ func NewNovelService(gateway *client.Gateway) (*NovelService ,error){
 
 	}
 	//先有network，再有contract
-	contract := network.GetContract("basic")
+	contract := network.GetContract("novel-basic")
 	if contract == nil{
 		return nil, fmt.Errorf("无法获取contract")
 	}

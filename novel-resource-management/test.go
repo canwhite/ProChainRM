@@ -3,11 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-
 	"github.com/hyperledger/fabric-gateway/pkg/client"
-	"github.com/hyperledger/fabric-gateway/pkg/identity"
-	"google.golang.org/grpc"
-
 	"novel-resource-management/network"
 	"novel-resource-management/service"
 )

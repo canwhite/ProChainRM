@@ -1,8 +1,10 @@
 package service
 
 import( 
+	"encoding/json"
 	"fmt"
 	"github.com/hyperledger/fabric-gateway/pkg/client"
+	"strconv"
 )
 
 type UserCreditService struct {
@@ -17,7 +19,7 @@ func NewUserCreditService(gateway *client.Gateway) (*UserCreditService, error) {
 		return nil, fmt.Errorf("userCredit network does not exist")
 	}
 
-	contract := network.GetContract("basic")
+	contract := network.GetContract("novel-basic")
 	if contract == nil {
 		return nil, fmt.Errorf("userCredit contract does not exist")
 	}
@@ -31,7 +33,7 @@ func NewUserCreditService(gateway *client.Gateway) (*UserCreditService, error) {
 func CreateUserCredit(us *UserCreditService, userId string, credit int, totalUsed int, totalRecharge int) error {
 	// 是的，Hyperledger Fabric Gateway 的 SubmitTransaction 方法会自动将参数转为字符串类型（即使你传入的是 int、float 等类型），
 	// 它会调用 fmt.Sprint() 进行转换。所以你可以直接传 int、float、bool 等基础类型参数，SDK 会自动转为字符串传递给链码。
-	_, err := us.contract.SubmitTransaction("CreateUserCredit", userId, credit,totalUsed,totalRecharge)
+	_, err := us.contract.SubmitTransaction("CreateUserCredit", userId, strconv.Itoa(credit), strconv.Itoa(totalUsed), strconv.Itoa(totalRecharge))
 	if err != nil{
 		return fmt.Errorf("create user credit failed:%v",err)
 	}	
@@ -40,7 +42,7 @@ func CreateUserCredit(us *UserCreditService, userId string, credit int, totalUse
 
 // delete
 func DeleteUserCredit(us * UserCreditService,userId string)error{
-	err := us.contract.SubmitTransaction("DeleteUserCredit",userId)
+	_, err := us.contract.SubmitTransaction("DeleteUserCredit",userId)
 	if err != nil{
 		return fmt.Errorf("delete user credit failed:%v",err)
 	}
@@ -49,7 +51,7 @@ func DeleteUserCredit(us * UserCreditService,userId string)error{
 
 // update 
 func UpdateUserCredit(us *UserCreditService,userId string,credit int, totalUsed int, totalRecharge int)error{
-	_,err := us.contract.EvaluateTransaction("UpdateUserCredit",userId,credit,totalUsed,totalRecharge)
+	_,err := us.contract.EvaluateTransaction("UpdateUserCredit",userId, strconv.Itoa(credit), strconv.Itoa(totalUsed), strconv.Itoa(totalRecharge))
 	if err != nil{
 		return fmt.Errorf("updateUserCreditFailed:%v",err)
 	}

@@ -17,7 +17,7 @@ type EventService struct {
 
 func NewEventService(gateway * client.Gateway) * EventService {
 	//先获取network再获取event
-	network := gateWay.GetNetwork("mychannel")
+	network := gateway.GetNetwork("mychannel")
 	return &EventService{
 		network: network,
 	}
@@ -25,7 +25,7 @@ func NewEventService(gateway * client.Gateway) * EventService {
 
 func (es * EventService) StartEventListening(ctx context.Context) error {
 	fmt.Println("🎧 Starting event listener...")
-	events,err := es.network.ChaincodeEvents(ctx, "basic")
+	events,err := es.network.ChaincodeEvents(ctx, "novel-basic")
 	if err != nil {	
 		// 是的，%v是Go语言fmt包中最通用的格式化动词，几乎所有类型都可以用%v来输出其默认格式。
 		// 例如：字符串、数字、结构体、切片、map、error等类型都可以用%v打印出来。
@@ -52,7 +52,7 @@ func (es * EventService) StartEventListening(ctx context.Context) error {
 
 //监听特定事件
 func (es * EventService) ListenForSpecificEvents(ctx context.Context, eventNames []string) error {
-	events, err := es.network.ChaincodeEvents(ctx, "basic", client.WithStartBlock(0))
+	events, err := es.network.ChaincodeEvents(ctx, "novel-basic", client.WithStartBlock(0))
 	if err != nil {
 		return fmt.Errorf("failed to start specific event listening: %w", err)
 	}
