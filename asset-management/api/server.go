@@ -139,6 +139,41 @@ func (s *Server) getAsset(c *gin.Context) {
 func (s *Server) createAsset(c *gin.Context) {
 	//struct后边的也是类型的一部分
 	var req struct {
+
+		// struct tag（结构体标签）是Go语言本身的特性，不是gin特有的。
+		// Go的struct tag允许你为结构体字段添加元数据，常用于序列化（如json、xml）、数据库映射、表单校验等。
+		// gin框架只是利用了Go的struct tag机制，
+		// 定义了自己的tag（如`binding`、`form`等）来实现参数绑定和校验。
+		// 总结：struct tag是Go语言的，gin只是用它来做参数绑定和校验。
+		// 这里的 `json:"id" binding:"required"` 是结构体标签（struct tag），用于指定该字段在序列化/反序列化（
+		// 如 JSON <-> Go struct）时的映射关系，以及在绑定请求参数时的校验规则。
+		// 具体来说：
+		// - `json:"id"` 表示该字段在 JSON 数据中的键名是 "id"。
+		// - `binding:"required"` 表示在使用 gin 框架绑定请求体（如 ShouldBindJSON）时，这个字段是必填的，否则会校验失败。
+		// 常见的 tag 选项有：
+
+
+		// 1. json 标签：
+		//    - `json:"name"`：指定 JSON 字段名
+		//    - `json:"name,omitempty"`：如果该字段为零值则序列化时忽略
+		//    - `json:"-"`：序列化/反序列化时忽略该字段
+
+
+		// 2. binding 标签（gin 框架）：
+		//    - `binding:"required"`：必填
+		//    - `binding:"omitempty"`：可选
+		//    - `binding:"min=1,max=10"`：长度或数值范围校验
+		//    - `binding:"email"`：邮箱格式校验
+		//    - `binding:"gte=0,lte=100"`：数值区间校验
+		//    - 还可以组合多个校验条件，如：`binding:"required,min=3,max=20"`
+		
+		// 3. form 标签（用于表单绑定）：
+		//    - `form:"username"`：指定表单字段名
+
+	
+		// 4. uri 标签（用于路径参数绑定）：
+		//    - `uri:"id"`：指定路径参数名
+		// 这些标签可以组合使用，具体取决于你的业务需求和数据来源。
 		ID             string `json:"id" binding:"required"`
 		Color          string `json:"color" binding:"required"`
 		Size           string `json:"size" binding:"required"`
@@ -148,6 +183,24 @@ func (s *Server) createAsset(c *gin.Context) {
 
 	// 是的，这一步是将前端传来的JSON数据自动绑定（反序列化）到Go的结构体（struct）变量req中。
 	// 这样后续就可以直接通过req.ID、req.Color等字段来访问请求体中的数据了。
+	// 除了 ShouldBindJSON，gin 还提供了多种数据绑定方法，常见的有：
+	// 1. ShouldBind：自动根据 Content-Type 选择绑定方式（JSON、表单、XML等）
+	//    err := c.ShouldBind(&req)
+	// 2. ShouldBindQuery：绑定 URL 查询参数（?id=xxx&color=red）
+	//    err := c.ShouldBindQuery(&req)
+	// 3. ShouldBindForm：绑定表单数据（Content-Type: application/x-www-form-urlencoded 或 multipart/form-data）
+	//    err := c.ShouldBindForm(&req)
+	// 4. ShouldBindUri：绑定路径参数（如 /assets/:id）
+	//    err := c.ShouldBindUri(&req)
+	// 5. ShouldBindHeader：绑定请求头参数
+	//    err := c.ShouldBindHeader(&req)
+	// 6. ShouldBindXML：绑定 XML 数据
+	//    err := c.ShouldBindXML(&req
+	// 7. ShouldBindYAML：绑定 YAML 数据
+	//    err := c.ShouldBindYAML(&req)
+	// 8. ShouldBindTOML：绑定 TOML 数据
+	//    err := c.ShouldBindTOML(&req)
+	// 这些方法都可以用于将请求中的数据自动映射到结构体中，具体选择哪种方法取决于你的数据来源和 Content-Type。
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
