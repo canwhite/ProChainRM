@@ -7,27 +7,26 @@ import (
 	"github.com/hyperledger/fabric-gateway/pkg/client"
 )
 
-
 type NovelService struct {
 	contract *client.Contract
 }
 
-func NewNovelService(gateway *client.Gateway) (*NovelService ,error){
+func NewNovelService(gateway *client.Gateway) (*NovelService, error) {
 	network := gateway.GetNetwork("mychannel")
-	if network == nil{
+	if network == nil {
 		return nil, fmt.Errorf("无法获取network对象")
 
 	}
 	//先有network，再有contract
 	contract := network.GetContract("novel-basic")
-	if contract == nil{
+	if contract == nil {
 		return nil, fmt.Errorf("无法获取contract")
 	}
-	return &NovelService{contract: contract},nil 
+	return &NovelService{contract: contract}, nil
 }
 
-//create novel
-func (s *NovelService) CreateNovel(id, author, storyOutline, 
+// create novel
+func (s *NovelService) CreateNovel(id, author, storyOutline,
 	subsections, characters, items, totalScenes string) error {
 
 	fmt.Printf("Creating novel %s...\n", id)
@@ -40,30 +39,28 @@ func (s *NovelService) CreateNovel(id, author, storyOutline,
 	return nil
 }
 
-//update
-func (s* NovelService) UpdateNovel(id, author, storyOutline, subsections, characters, items, totalScenes string) error {
-	_,err := s.contract.SubmitTransaction("UpdateNovel",id, author, storyOutline, subsections, characters, items, totalScenes)
-	if err != nil{
+// update
+func (s *NovelService) UpdateNovel(id, author, storyOutline, subsections, characters, items, totalScenes string) error {
+	_, err := s.contract.SubmitTransaction("UpdateNovel", id, author, storyOutline, subsections, characters, items, totalScenes)
+	if err != nil {
 		return fmt.Errorf("failed to update novel %s: %w", id, err)
-	}
-	return nil
-}      
-
-
-//del 
-func (s* NovelService)DeleteNovel(id string)error{
-	_,err := s.contract.SubmitTransaction("DeleteNovel",id)
-	if err != nil{
-		return fmt.Errorf("failed to delete novel %s: %w",id, err)
 	}
 	return nil
 }
 
+// del
+func (s *NovelService) DeleteNovel(id string) error {
+	_, err := s.contract.SubmitTransaction("DeleteNovel", id)
+	if err != nil {
+		return fmt.Errorf("failed to delete novel %s: %w", id, err)
+	}
+	return nil
+}
 
-//ReadNovel 读取小说信息
-func (s *NovelService)ReadNovel(id string)(map[string]interface{}, error){
+// ReadNovel 读取小说信息
+func (s *NovelService) ReadNovel(id string) (map[string]interface{}, error) {
 	fmt.Printf("Reading novel %s...\n", id)
-	
+
 	result, err := s.contract.EvaluateTransaction("ReadNovel", id)
 
 	if err != nil {
@@ -73,18 +70,18 @@ func (s *NovelService)ReadNovel(id string)(map[string]interface{}, error){
 	//map[string]interface{}
 	var novelData map[string]interface{}
 
-	err  = json.Unmarshal(result,&novelData)
-	if err != nil{
-		return nil,fmt.Errorf("unmarshal failed:%v",err)
+	err = json.Unmarshal(result, &novelData)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal failed:%v", err)
 	}
 
 	return novelData, nil
 }
 
-//get all novels
+// get all novels
 func (s *NovelService) GetAllNovels() ([]map[string]interface{}, error) {
 	fmt.Println("Getting all novels...")
-	
+
 	result, err := s.contract.EvaluateTransaction("GetAllNovels")
 
 	if err != nil {
@@ -93,12 +90,11 @@ func (s *NovelService) GetAllNovels() ([]map[string]interface{}, error) {
 
 	var novels []map[string]interface{}
 
-	err = json.Unmarshal(result,&novels)
+	err = json.Unmarshal(result, &novels)
 
-	if err != nil{
-		return nil, fmt.Errorf("unmarshal failed:%w",err)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal failed:%w", err)
 	}
 
 	return novels, nil
 }
-

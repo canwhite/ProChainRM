@@ -6,8 +6,8 @@ import (
 	"os"          // 操作系统接口，用于读取证书文件
 
 	"github.com/hyperledger/fabric-gateway/pkg/identity" // Fabric网关身份验证包
-	"google.golang.org/grpc"                           // gRPC客户端通信库
-	"google.golang.org/grpc/credentials"                // gRPC凭证管理
+	"google.golang.org/grpc"                             // gRPC客户端通信库
+	"google.golang.org/grpc/credentials"                 // gRPC凭证管理
 )
 
 func NewGrpcConnection() (*grpc.ClientConn, error) {
@@ -17,7 +17,7 @@ func NewGrpcConnection() (*grpc.ClientConn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read TLS certificate: %w", err)
 	}
-	
+
 	//将pem格式解析为x509证书对象
 	tlsCertificate, err := identity.CertificateFromPEM(tlsCertificatePEM)
 	if err != nil {
@@ -29,7 +29,7 @@ func NewGrpcConnection() (*grpc.ClientConn, error) {
 	certPool.AddCert(tlsCertificate)
 	//credentials是凭证，用于验证服务器证书
 	transportCredentials := credentials.NewClientTLSFromCert(certPool, "peer0.org1.example.com")
-	
+
 	//注意返回的是grpc的client对象，供gateway使用
 	return grpc.NewClient("dns:///localhost:7051", grpc.WithTransportCredentials(transportCredentials))
 
@@ -64,26 +64,25 @@ func NewSign() identity.Sign {
 	if err != nil {
 		panic(fmt.Errorf("failed to read private key: %w", err))
 	}
-	
+
 	//解析pem，搞到x509证书对象
 	privateKey, err := identity.PrivateKeyFromPEM(privateKeyPEM)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse private key: %w", err))
 	}
-	
-	//创建签名函数	
+
+	//创建签名函数
 	sign, err := identity.NewPrivateKeySign(privateKey)
 	if err != nil {
 		panic(fmt.Errorf("failed to create sign function: %w", err))
 	}
-	
+
 	return sign
 }
 
-/** 
+/**
 反正都需要一个x509证书;
 then一个通过pool new一个NewClientTLSFromCert
 一个new一个NewX509Identity
 一个new一个NewPrivateKeySign
 */
-

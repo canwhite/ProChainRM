@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"github.com/hyperledger/fabric-gateway/pkg/client"
+	"log"
 	"novel-resource-management/network"
 	"novel-resource-management/service"
 )
 
-//1.建立网路连接 => 2.创建身份和签名 => 3.创建网关 => 4.创建服务实例 
+// 1.建立网路连接 => 2.创建身份和签名 => 3.创建网关 => 4.创建服务实例
 func main() {
 	// 1. 建立网络连接
 	fmt.Println("正在建立网络连接...")
@@ -19,7 +19,7 @@ func main() {
 	defer grpcConnection.Close()
 
 	// 2. 创建身份和签名
-	id := network.NewIdentity() 
+	id := network.NewIdentity()
 	sign := network.NewSign()
 
 	// 3. 创建网关
