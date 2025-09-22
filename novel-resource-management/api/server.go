@@ -57,11 +57,12 @@ func (s *Server) setupRoutes() {
 	novels := s.router.Group("/api/v1/novels")
 	{
 		//RESTFUL API
-		novels.GET("", getAllNovels)
-		novels.GET("/:id", getNovel)
+		novels.GET("", s.getAllNovels)
+		novels.GET("/:id",s.getNovel)
 		//create
-		novels.POST("", createNovel)
-		//update
+		novels.POST("", s.createNovel)
+		//update,PUT是整体更新，PATCH是部分更新
+		novels.PUT("/:id",s.updateNovel)
 
 		//delete
 
@@ -148,7 +149,7 @@ func (s *Server) createNovel(c *gin.Context) {
 
 	//参数顺序
 	//id, author, storyOutline, subsections, characters, items, totalScenes string
-	if err = s.novelService.CreateNovel(req.ID, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes, req.CreatedAt); err != nil {
+	if err = s.novelService.CreateNovel(req.ID, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -160,6 +161,52 @@ func (s *Server) createNovel(c *gin.Context) {
 		"id":      req.ID,
 	})
 }
+
+func (s *Server) updateNovel(c *gin.Context){
+	//todo
+	id := c.Param("id")
+
+	if id == ""{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"you do not get the id!"
+		})
+		return
+	}
+
+	var req struct {
+		ID           string `json:"id" binding:"required"`
+		Author       string `json:"author" binding:"required"`
+		StoryOutline string `json:"storyOutline" binding:"required"`
+		Subsections  string `json:"subsections" binding:"required"`
+		Characters   string `json:"characters" binding:"required"`
+		Items        string `json:"items" binding:"required"`
+		TotalScenes  string `json:"totalScenes" binding:"required"`
+		CreatedAt    string `json:"createAt" binding:"omitempty"`
+		UpdatedAt    string `json:"updatedAt" binding:"omitempty"`
+	}
+
+
+	if err := c.ShouldBindJSON(&req); err != nil{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":err.Error(),
+		})
+		return
+	}
+
+
+	if err = s.novelService.UpdateNovel(id, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes); err != nil{
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"error":err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK,gin.H{
+		"message":"update successfully",
+		"id":id,
+	})
+}
+
 
 func (s *Server) healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
