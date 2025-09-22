@@ -57,6 +57,9 @@ func (s *Server) setupRoutes() {
 		assets.GET("/:id", s.getAsset)
 		assets.POST("", s.createAsset)
 		assets.PUT("/:id", s.updateAsset)
+		// PATCH 方法通常用于“部分更新”资源。与 PUT（整体替换资源）不同，PATCH 只需要提交需要修改的字段即可。
+		// 例如 PATCH /api/v1/assets/:id/transfer 可以用于资产的转移操作，只需提供新的拥有者信息，而不必提交整个资产对象。
+		// 在 Gin 中，assets.PATCH("/:id/transfer", s.transferAsset) 就是注册了一个 PATCH 路由，用于处理资产转移的业务逻辑。
 		assets.PATCH("/:id/transfer", s.transferAsset)
 		assets.DELETE("/:id", s.deleteAsset)
 	}
