@@ -58,13 +58,13 @@ func (s *Server) setupRoutes() {
 	{
 		//RESTFUL API
 		novels.GET("", s.getAllNovels)
-		novels.GET("/:id",s.getNovel)
+		novels.GET("/:id", s.getNovel)
 		//create
 		novels.POST("", s.createNovel)
 		//update,PUT是整体更新，PATCH是部分更新
-		novels.PUT("/:id",s.updateNovel)
-
+		novels.PUT("/:id", s.updateNovel)
 		//delete
+		novels.DELETE("/:id", s.deleteNovel)
 
 	}
 
@@ -162,13 +162,13 @@ func (s *Server) createNovel(c *gin.Context) {
 	})
 }
 
-func (s *Server) updateNovel(c *gin.Context){
+func (s *Server) updateNovel(c *gin.Context) {
 	//todo
 	id := c.Param("id")
 
-	if id == ""{
-		c.JSON(http.StatusBadRequest,gin.H{
-			"error":"you do not get the id!"
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "you do not get the id!",
 		})
 		return
 	}
@@ -185,28 +185,46 @@ func (s *Server) updateNovel(c *gin.Context){
 		UpdatedAt    string `json:"updatedAt" binding:"omitempty"`
 	}
 
-
-	if err := c.ShouldBindJSON(&req); err != nil{
-		c.JSON(http.StatusBadRequest,gin.H{
-			"error":err.Error(),
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
 		})
 		return
 	}
 
-
-	if err = s.novelService.UpdateNovel(id, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes); err != nil{
-		c.JSON(http.StatusInternalServerError,gin.H{
-			"error":err.Error(),
+	if err = s.novelService.UpdateNovel(id, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK,gin.H{
-		"message":"update successfully",
-		"id":id,
+	c.JSON(http.StatusOK, gin.H{
+		"message": "update successfully",
+		"id":      id,
 	})
 }
 
+func (s *Server) deleteNovel(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "the param is ignore",
+		})
+		return
+	}
+	//novel
+	if err := s.novelService.DeleteNovel(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "delete successfully",
+		"id":      id,
+	})
+}
 
 func (s *Server) healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
