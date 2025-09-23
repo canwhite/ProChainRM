@@ -39,9 +39,9 @@ func NewServer(gateway *client.Gateway) *Server {
 
 	server := &Server{
 		router:        gin.GetDefault(),
-		novelService:  service.NewNovelService(gateway),
-		creditService: service.NewUserCreditService(gateway),
-		eventService:  service.NewEventService(gateway),
+		novelService:  novelService,
+		creditService: creditService,
+		eventService:  eventService,
 		network:       network,
 	}
 
@@ -76,7 +76,6 @@ func (s *Server) setupRoutes() {
 
 	events := s.router.Group("/api/v1/events")
 	{
-		//TODO，RESTFUL API	
 		events.GET("/listen",s.streamEvents)
 	}
 
@@ -141,6 +140,7 @@ func (s *Server) createNovel(c *gin.Context) {
 		CreatedAt    string `json:"createAt" binding:"omitempty"`
 	}
 
+	//这个err := 只在这个if作用域； 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -150,7 +150,7 @@ func (s *Server) createNovel(c *gin.Context) {
 
 	//参数顺序
 	//id, author, storyOutline, subsections, characters, items, totalScenes string
-	if err = s.novelService.CreateNovel(req.ID, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes); err != nil {
+	if err := s.novelService.CreateNovel(req.ID, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -193,7 +193,7 @@ func (s *Server) updateNovel(c *gin.Context) {
 		return
 	}
 
-	if err = s.novelService.UpdateNovel(id, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes); err != nil {
+	if err := s.novelService.UpdateNovel(id, req.Author, req.StoryOutline, req.Subsections, req.Characters, req.Items, req.TotalScenes); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -250,15 +250,14 @@ func (s *Server) streamEvents(c *gin.Context){
 	}
 
 	//c.stream和闭包
-	c.Stream(func(w *io.Writer) bool{
+	c.Stream(func(w io.Writer) bool{
 		select{
 		case event := <- events:
 			//todo,最终的操作
 			//hyper success
-			novel := formatJSON(event.Payload)
+			novel := s.formatJSON(event.Payload)
 			//Fprintf用于将指定的字符串写入io.Writer
 			fmt.Fprintf(w, "data: %s - %s\n\n", event.EventName, novel)
-			
 			return true
 		case <- ctx.Done():
 			return false
@@ -275,7 +274,12 @@ func (s *Server) healthCheck(c *gin.Context) {
 	})
 }
 
-func (s *Server) formatJSON(data[] bytes)string {
+func (s *Server) start(address string) error{
+	log.Printf("🚀 Starting server on %s", address)
+	return s.router.Run(address)
+}
+
+func (s *Server) formatJSON(data []byte)string {
 	var result bytes.Buffer
 	//第三个参数字符串的前缀，第四个参数是缩进
 	if err :=json.Indent(&result,data,"","    "); err != nil{
