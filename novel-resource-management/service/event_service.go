@@ -23,6 +23,7 @@ func NewEventService(gateway *client.Gateway) *EventService {
 
 func (es *EventService) StartEventListening(ctx context.Context) error {
 	fmt.Println("🎧 Starting event listener...")
+	
 	events, err := es.network.ChaincodeEvents(ctx, "novel-basic")
 	if err != nil {
 		// 是的，%v是Go语言fmt包中最通用的格式化动词，几乎所有类型都可以用%v来输出其默认格式。

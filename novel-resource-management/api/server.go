@@ -76,7 +76,8 @@ func (s *Server) setupRoutes() {
 
 	events := s.router.Group("/api/v1/events")
 	{
-		//TODO，RESTFUL API
+		//TODO，RESTFUL API	
+		events.GET("/listen",s.streamEvents)
 	}
 
 }
@@ -226,10 +227,59 @@ func (s *Server) deleteNovel(c *gin.Context) {
 	})
 }
 
+func (s *Server) streamEvents(c *gin.Context){
+	// 这三个属性分别是：
+	// 1. Content-Type: 设置为 "text/event-stream"，表示响应内容是 Server-Sent Events（SSE）流，前端可以实时接收事件推送。
+	// 2. Cache-Control: 设置为 "no-cache"，告知浏览器不要对该响应进行缓存，确保每次都能获取到最新的事件数据。
+	// 3. Connection: 设置为 "keep-alive"，保持 HTTP 连接不断开，以便持续推送事件数据给客户端。
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+
+	//go思维
+	ctx, cancel := context.WithCancel(c.Request.Context())
+	defer cancel()
+	
+	//chain code 都返回两个参数
+	events,err := s.network.ChaincodeEvents(ctx,"novel-basic")
+
+	if err != nil{
+		//spritf会返回字符串，println不会
+		c.String(http.StatusInternalServerError,fmt.Sprintf("error: %v", err))
+		return
+	}
+
+	//c.stream和闭包
+	c.Stream(func(w *io.Writer) bool{
+		select{
+		case event := <- events:
+			//todo,最终的操作
+			//hyper success
+			novel := formatJSON(event.Payload)
+			//Fprintf用于将指定的字符串写入io.Writer
+			fmt.Fprintf(w, "data: %s - %s\n\n", event.EventName, novel)
+			
+			return true
+		case <- ctx.Done():
+			return false
+		}
+	})
+}
+
+
 func (s *Server) healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
 		"message": "Fabric Gateway API is running",
 		"time":    time.Now().Format(time.RFC3339),
 	})
+}
+
+func (s *Server) formatJSON(data[] bytes)string {
+	var result bytes.Buffer
+	//第三个参数字符串的前缀，第四个参数是缩进
+	if err :=json.Indent(&result,data,"","    "); err != nil{
+		return string(data)
+	}
+	return result.String()
 }

@@ -320,6 +320,11 @@ func (s *Server) streamEvents(c *gin.Context) {
 		select {
 		case event := <-events:
 			asset := formatJSON(event.Payload)
+			// Fprintf 用于将格式化的字符串写入到指定的 io.Writer（这里是 SSE 的响应流 w），
+			// Sprintf 则是将格式化的字符串返回为一个字符串变量，不会直接输出或写入。
+			// 例如：
+			// fmt.Fprintf(w, "data: %s - %s\n\n", event.EventName, asset) // 写入到 w
+			// str := fmt.Sprintf("data: %s - %s\n\n", event.EventName, asset) // 返回字符串，可后续使用
 			fmt.Fprintf(w, "data: %s - %s\n\n", event.EventName, asset)
 			return true
 		case <-ctx.Done():
@@ -337,7 +342,7 @@ func (s *Server) Start(address string) error {
 // formatJSON formats JSON data with proper indentation
 func formatJSON(data []byte) string {
 	var result bytes.Buffer
-	//不一样的是第一个是接收值
+	// 这里没有后续参数需要处理，直接进入缩进格式化
 	if err := json.Indent(&result, data, "", "  "); err != nil {
 		return string(data)
 	}
