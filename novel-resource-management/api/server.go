@@ -25,6 +25,7 @@ type Server struct {
 
 // create new service interface
 func NewServer(gateway *client.Gateway) *Server {
+	//network
 	network := gateway.GetNetwork("mychannel")
 
 	novelService, err := service.NewNovelService(gateway)
@@ -38,7 +39,7 @@ func NewServer(gateway *client.Gateway) *Server {
 	eventService := service.NewEventService(gateway)
 
 	server := &Server{
-		router:        gin.GetDefault(),
+		router:        gin.Default(),
 		novelService:  novelService,
 		creditService: creditService,
 		eventService:  eventService,
@@ -70,7 +71,18 @@ func (s *Server) setupRoutes() {
 
 	users := s.router.Group("/api/v1/users")
 	{
-		//TODO，RESTFUL API
+		//get
+		users.GET("",s.getAllUserCredits)
+		users.GET("/:id",s.getUserCredit)
+
+		//create
+		users.POST("",s.createUserCredit)
+
+		//update
+
+		//delete
+
+
 
 	}
 
@@ -92,6 +104,11 @@ func (s *Server) getAllNovels(c *gin.Context) {
 		})
 		return
 	}
+
+	if novels == nil {
+		novels = []interface{}{}
+	}
+
 	//c.JSON不用return
 	c.JSON(
 		http.StatusOK,
@@ -114,7 +131,6 @@ func (s *Server) getNovel(c *gin.Context) {
 	//1. 短变量声明
 	novel, err := s.novelService.ReadNovel(id)
 	if err != nil {
-
 		c.JSON(http.StatusInternalServerError, gin.H{
 			//2.结构体逗号
 			"error": err.Error(),
@@ -266,6 +282,94 @@ func (s *Server) streamEvents(c *gin.Context){
 }
 
 
+func (s *Server) getAllUserCredits(c *gin.Context){
+	credits, err := s.creditService.GetAllUserCredits()
+	if err != nil{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":err.Error(),
+		})
+		return
+	}
+	//如果是nil，我们返回空数组
+	if credits == nil{
+		credits = []interface{}{}
+	}
+
+	c.JSON(http.StatusOK,gin.H{
+		"credits":credits,
+		"count":len(credits),
+	})
+}
+
+func (s *Server)getUserCredit(c *gin.Context){
+	id := c.Param("id")
+
+	if id == ""{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"can not get the user credit id",
+		})
+		return
+	}
+	credit,err :=  s.creditService.ReadUserCredit(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if credit == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "未找到该用户积分信息",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"credit": credit,
+	})
+}
+
+func (s *Server)createUserCredit(c *gin.Context){
+	var req struct{
+		UserID        string `json:"userId" binding:"required"`
+		Credit        int    `json:"credit" binding:"required"`
+		TotalUsed     int    `json:"totalUsed" binding:"required"`
+		TotalRecharge int    `json:"totalRecharge" binding:"required"`
+		CreatedAt     string `json:"createdAt" binding:"omitempty"`
+		UpdatedAt     string `json:"updatedAt" binding:"omitempty"`
+	}
+
+	// 然后从JSON转为interface{}
+	if err := c.ShouldBindJSON(&req); err!= nil{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":err.Error(),
+		})
+		return
+	}
+
+	// 输入验证：credit不能为负数
+	if req.Credit < 0 {
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"credit不能为负数",
+		})
+		return
+	}
+
+	// then we create the user credit
+	// userId string, credit int, totalUsed int, totalRecharge int
+    if err:= s.creditService.CreateUserCredit(req.UserID,req.Credit,req.TotalUsed,req.TotalRecharge); err != nil{
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"error":err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK,gin.H{
+		"message":"create successfully",
+		"id":req.UserID,
+	})
+}
+
 func (s *Server) healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
@@ -274,7 +378,7 @@ func (s *Server) healthCheck(c *gin.Context) {
 	})
 }
 
-func (s *Server) start(address string) error{
+func (s *Server) Start(address string) error{
 	log.Printf("🚀 Starting server on %s", address)
 	return s.router.Run(address)
 }
