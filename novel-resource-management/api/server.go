@@ -79,10 +79,10 @@ func (s *Server) setupRoutes() {
 		users.POST("",s.createUserCredit)
 
 		//update
+		users.PUT("/:id",s.updateUserCredit)
 
 		//delete
-
-
+		users.DELETE("/:id",s.deleteUserCredit)
 
 	}
 
@@ -377,6 +377,56 @@ func (s *Server) healthCheck(c *gin.Context) {
 		"time":    time.Now().Format(time.RFC3339),
 	})
 }
+
+
+func (s * Server)updateUserCredit(c *gin.Context){
+
+	id := c.Param("id")
+	if id == ""{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"can not get user credit id",
+		})
+		return
+	}
+
+	var req  struct {
+		UserID        string `json:"userId" binding:"required"`
+		Credit        int    `json:"credit" binding:"required"`
+		TotalUsed     int    `json:"totalUsed" binding:"required"`
+		TotalRecharge int    `json:"totalRecharge" binding:"required"`
+		CreatedAt     string `json:"createdAt" binding:"omitempty"`
+		UpdatedAt     string `json:"updatedAt" binding:"omitempty"`
+	}
+	//then we get interface{}
+	if err := c.ShouldBindJSON(&req); err!= nil{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":err.Error(),
+		})
+		return
+	}	
+	
+	//拿到对应的参数去处理
+	//userId string, credit int, totalUsed int, totalRecharge int
+	if err := s.creditService.UpdateUserCredit(id,req.Credit,req.TotalUsed,req.TotalRecharge) ; err != nil{
+		//todo
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"error":err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK,gin.H{
+		"message":"update user credit successfully",
+		"id":id,
+	})
+}
+
+func (s *Server)deleteUserCredit(c * gin.Context){
+	//todo, delete
+
+
+}
+
 
 func (s *Server) Start(address string) error{
 	log.Printf("🚀 Starting server on %s", address)
