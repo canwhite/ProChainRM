@@ -423,8 +423,25 @@ func (s * Server)updateUserCredit(c *gin.Context){
 
 func (s *Server)deleteUserCredit(c * gin.Context){
 	//todo, delete
+	id := c.Param("id")
+	if id == ""{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"id is not found",
+		})
+		return
+	}
 
+	if err := s.creditService.DeleteUserCredit(id); err != nil{
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"error":err.Error(),
+		})
+		return
+	}
 
+	c.JSON(http.StatusOK,gin.H{
+		"message":"delete successfully!",
+		"id":id,
+	})
 }
 
 
