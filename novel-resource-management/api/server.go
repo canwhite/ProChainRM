@@ -17,6 +17,7 @@ import (
 
 type Server struct {
 	router        *gin.Engine
+	httpServer    *http.Server
 	novelService  *service.NovelService
 	creditService *service.UserCreditService
 	eventService  *service.EventService
@@ -47,6 +48,7 @@ func NewServer(gateway *client.Gateway) *Server {
 	}
 
 	server.setupRoutes()
+	
 	return server
 }
 
@@ -93,6 +95,14 @@ func (s *Server) setupRoutes() {
 
 }
 
+// Shutdown 优雅关闭服务器
+func (s *Server) Shutdown(ctx context.Context) error {
+	if s.httpServer != nil {
+		return s.httpServer.Shutdown(ctx)
+	}
+	return nil
+}
+
 // GIN do not need to return some data
 func (s *Server) getAllNovels(c *gin.Context) {
 
@@ -106,7 +116,7 @@ func (s *Server) getAllNovels(c *gin.Context) {
 	}
 
 	if novels == nil {
-		novels = []interface{}{}
+		novels = []map[string]interface{}{}
 	}
 
 	//c.JSON不用return
@@ -292,7 +302,7 @@ func (s *Server) getAllUserCredits(c *gin.Context){
 	}
 	//如果是nil，我们返回空数组
 	if credits == nil{
-		credits = []interface{}{}
+		credits = []map[string]interface{}{}
 	}
 
 	c.JSON(http.StatusOK,gin.H{
@@ -446,8 +456,14 @@ func (s *Server)deleteUserCredit(c * gin.Context){
 
 
 func (s *Server) Start(address string) error{
+	// 初始化 http.Server，使用传入的地址
+	s.httpServer = &http.Server{
+		Addr:    address,
+		Handler: s.router,
+	}
+	
 	log.Printf("🚀 Starting server on %s", address)
-	return s.router.Run(address)
+	return s.httpServer.ListenAndServe()
 }
 
 func (s *Server) formatJSON(data []byte)string {

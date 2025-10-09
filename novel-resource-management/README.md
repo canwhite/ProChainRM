@@ -11,9 +11,6 @@ PS：先到根目录，然后到 test-network
 1. 环境变量:
    source set-env.sh
 
-2. 链码并初始化:
-   ./network.sh deployCC -ccn novel-basic -ccp ../novel-resource-events -ccl go -cci InitLedger
-
 执行的原因是：
 
 这个脚本设置了 Hyperledger Fabric 测试网络所需的环境变量，包括：

@@ -65,6 +65,7 @@ func (s *SmartContract) CreateNovel(ctx contractapi.TransactionContextInterface,
 		Items:        items,
 		TotalScenes:  totalScenes,
 		CreatedAt:    time.Now().Format("2006-01-02 15:04:05"),
+		UpdatedAt:    time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	novelJSON, err := json.Marshal(novel)
@@ -127,6 +128,10 @@ func (s *SmartContract) GetAllNovels(ctx contractapi.TransactionContextInterface
 
 		// Check if this is actually a novel by validating required fields
 		if novel.ID != "" {
+			// Ensure UpdatedAt is not empty for schema compliance
+			if novel.UpdatedAt == "" {
+				novel.UpdatedAt = novel.CreatedAt
+			}
 			novels = append(novels, &novel)
 		}
 	}
@@ -219,6 +224,7 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 			Items:        "神秘宝物",
 			TotalScenes:  "2",
 			CreatedAt:    time.Now().Format("2006-01-02 15:04:05"),
+			UpdatedAt:    time.Now().Format("2006-01-02 15:04:05"),
 		},
 		{
 			ID:           "novel_002",
@@ -229,6 +235,7 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 			Items:        "古老卷轴",
 			TotalScenes:  "2",
 			CreatedAt:    time.Now().Format("2006-01-02 15:04:05"),
+			UpdatedAt:    time.Now().Format("2006-01-02 15:04:05"),
 		},
 		{
 			ID:           "novel_003",
@@ -239,6 +246,7 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 			Items:        "魔法石",
 			TotalScenes:  "3",
 			CreatedAt:    time.Now().Format("2006-01-02 15:04:05"),
+			UpdatedAt:    time.Now().Format("2006-01-02 15:04:05"),
 		},
 	}
 
