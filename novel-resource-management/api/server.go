@@ -163,7 +163,7 @@ func (s *Server) createNovel(c *gin.Context) {
 		Characters   string `json:"characters" binding:"required"`
 		Items        string `json:"items" binding:"required"`
 		TotalScenes  string `json:"totalScenes" binding:"required"`
-		CreatedAt    string `json:"createAt" binding:"omitempty"`
+		CreatedAt    string `json:"createdAt" binding:"omitempty"`
 	}
 
 	//这个err := 只在这个if作用域； 
@@ -208,7 +208,7 @@ func (s *Server) updateNovel(c *gin.Context) {
 		Characters   string `json:"characters" binding:"required"`
 		Items        string `json:"items" binding:"required"`
 		TotalScenes  string `json:"totalScenes" binding:"required"`
-		CreatedAt    string `json:"createAt" binding:"omitempty"`
+		CreatedAt    string `json:"createdAt" binding:"omitempty"`
 		UpdatedAt    string `json:"updatedAt" binding:"omitempty"`
 	}
 
@@ -340,27 +340,58 @@ func (s *Server)getUserCredit(c *gin.Context){
 }
 
 func (s *Server)createUserCredit(c *gin.Context){
+	//之前TotalUsed加了binding:"required"，因为传参为0报错了
 	var req struct{
-		UserID        string `json:"userId" binding:"required"`
-		Credit        int    `json:"credit" binding:"required"`
-		TotalUsed     int    `json:"totalUsed" binding:"required"`
-		TotalRecharge int    `json:"totalRecharge" binding:"required"`
-		CreatedAt     string `json:"createdAt" binding:"omitempty"`
-		UpdatedAt     string `json:"updatedAt" binding:"omitempty"`
+		UserID        string `json:"userId"`
+		Credit        int    `json:"credit"`
+		TotalUsed     int    `json:"totalUsed"`
+		TotalRecharge int    `json:"totalRecharge"`
+		CreatedAt     string `json:"createdAt,omitempty"`
+		UpdatedAt     string `json:"updatedAt,omitempty"`
 	}
+
+	// 添加调试日志：读取原始请求体
+	bodyBytes, _ := c.GetRawData()
+	log.Printf("DEBUG: Raw request body: %s", string(bodyBytes))
+	
+	// 重新设置请求体，因为GetRawData会消耗它
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	// 然后从JSON转为interface{}
 	if err := c.ShouldBindJSON(&req); err!= nil{
+		log.Printf("DEBUG: JSON binding error: %v", err)
 		c.JSON(http.StatusBadRequest,gin.H{
 			"error":err.Error(),
 		})
 		return
 	}
 
-	// 输入验证：credit不能为负数
+	// 添加调试日志：验证后的数据
+	log.Printf("DEBUG: Parsed request - UserID: %s, Credit: %d, TotalUsed: %d, TotalRecharge: %d", 
+		req.UserID, req.Credit, req.TotalUsed, req.TotalRecharge)
+
+	// 手动验证必填字段
+	if req.UserID == "" {
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"userId不能为空",
+		})
+		return
+	}
 	if req.Credit < 0 {
 		c.JSON(http.StatusBadRequest,gin.H{
 			"error":"credit不能为负数",
+		})
+		return
+	}
+	if req.TotalUsed < 0 {
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"totalUsed不能为负数",
+		})
+		return
+	}
+	if req.TotalRecharge < 0 {
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"totalRecharge不能为负数",
 		})
 		return
 	}

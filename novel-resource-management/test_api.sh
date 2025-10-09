@@ -35,7 +35,7 @@ echo ""
 # 3. 创建新小说
 echo "3️⃣  创建新小说..."
 create_novel_data='{
-    "ID": "test_novel_001",
+    "id": "test_novel_001",
     "author": "测试作者",
     "storyOutline": "这是一个测试小说的故事大纲",
     "subsections": "第一章,第二章,第三章",
@@ -64,7 +64,7 @@ echo ""
 # 5. 更新小说
 echo "5️⃣  更新小说..."
 update_novel_data='{
-    "ID": "test_novel_001",
+    "id": "test_novel_001",
     "author": "更新的测试作者",
     "storyOutline": "这是更新后的故事大纲",
     "subsections": "第一章,第二章,第三章,第四章",

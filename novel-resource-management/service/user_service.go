@@ -30,8 +30,7 @@ func NewUserCreditService(gateway *client.Gateway) (*UserCreditService, error) {
 
 // create
 func (us *UserCreditService) CreateUserCredit(userId string, credit int, totalUsed int, totalRecharge int) error {
-	// 是的，Hyperledger Fabric Gateway 的 SubmitTransaction 方法会自动将参数转为字符串类型（即使你传入的是 int、float 等类型），
-	// 它会调用 fmt.Sprint() 进行转换。所以你可以直接传 int、float、bool 等基础类型参数，SDK 会自动转为字符串传递给链码。
+	// Gateway要求所有参数都是string类型，需要手动转换int参数
 	_, err := us.contract.SubmitTransaction("CreateUserCredit", userId, strconv.Itoa(credit), strconv.Itoa(totalUsed), strconv.Itoa(totalRecharge))
 	if err != nil {
 		return fmt.Errorf("create user credit failed:%v", err)
@@ -50,6 +49,7 @@ func (us *UserCreditService) DeleteUserCredit(userId string) error {
 
 // update
 func (us *UserCreditService) UpdateUserCredit(userId string, credit int, totalUsed int, totalRecharge int) error {
+	// Gateway要求所有参数都是string类型，需要手动转换int参数
 	_, err := us.contract.SubmitTransaction("UpdateUserCredit", userId, strconv.Itoa(credit), strconv.Itoa(totalUsed), strconv.Itoa(totalRecharge))
 	if err != nil {
 		return fmt.Errorf("updateUserCreditFailed:%v", err)
