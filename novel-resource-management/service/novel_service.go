@@ -30,8 +30,16 @@ func (s *NovelService) CreateNovel(id, author, storyOutline,
 	subsections, characters, items, totalScenes string) error {
 
 	fmt.Printf("Creating novel %s...\n", id)
+	
+	// 先查询小说是否已存在
+	existingNovel, err := s.ReadNovel(id)
+	if err == nil && existingNovel != nil {
+		// 如果查询成功且返回了数据，说明小说已存在
+		return fmt.Errorf("小说ID %s 已存在，不能重复创建", id)
+	}
+	
 	// 增删改操作需要使用SubmitTransaction，这里已经正确调用了SubmitTransaction方法
-	_, err := s.contract.SubmitTransaction("CreateNovel",
+	_, err = s.contract.SubmitTransaction("CreateNovel",
 		id, author, storyOutline, subsections, characters, items, totalScenes)
 	if err != nil {
 		return fmt.Errorf("failed to create novel %s: %w", id, err)

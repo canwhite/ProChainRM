@@ -75,13 +75,16 @@ func main() {
 func testHealthCheck() {
 	fmt.Println("1️⃣  健康检查...")
 	
+	//1）先get，拿到resp，
 	resp, err := http.Get(HEALTH_URL)
 	if err != nil {
 		fmt.Printf("❌ 健康检查失败: %v\n", err)
 		return
 	}
+	//记得resp的close
 	defer resp.Body.Close()
 
+	//2）读
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("❌ 读取响应失败: %v\n", err)
@@ -89,6 +92,7 @@ func testHealthCheck() {
 	}
 
 	var health HealthResponse
+	//3）挂载数据
 	if err := json.Unmarshal(body, &health); err != nil {
 		fmt.Printf("❌ 解析JSON失败: %v\n", err)
 		return

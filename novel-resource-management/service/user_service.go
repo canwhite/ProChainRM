@@ -30,8 +30,18 @@ func NewUserCreditService(gateway *client.Gateway) (*UserCreditService, error) {
 
 // create
 func (us *UserCreditService) CreateUserCredit(userId string, credit int, totalUsed int, totalRecharge int) error {
+	// 先检查用户是否已存在
+	_, err := us.ReadUserCredit(userId)
+	if err == nil {
+		// 用户已存在，返回重复创建错误
+		// Errorf 是 Go 语言中 fmt 包提供的一个函数，用来格式化输出错误信息并返回一个 error 类型的值。
+		// 用法类似于 Printf，但返回的是 error，而不是直接输出字符串。
+		// 例如：fmt.Errorf("user %s already exists", userId) 会生成一个格式化后的 error。
+		return fmt.Errorf("user %s already exists", userId)
+	}
+	
 	// Gateway要求所有参数都是string类型，需要手动转换int参数
-	_, err := us.contract.SubmitTransaction("CreateUserCredit", userId, strconv.Itoa(credit), strconv.Itoa(totalUsed), strconv.Itoa(totalRecharge))
+	_, err = us.contract.SubmitTransaction("CreateUserCredit", userId, strconv.Itoa(credit), strconv.Itoa(totalUsed), strconv.Itoa(totalRecharge))
 	if err != nil {
 		return fmt.Errorf("create user credit failed:%v", err)
 	}

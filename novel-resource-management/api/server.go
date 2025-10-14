@@ -12,7 +12,9 @@ import (
 
 	"github.com/gin-gonic/gin" //用gin
 	"github.com/hyperledger/fabric-gateway/pkg/client"
+	"novel-resource-management/middleware"
 	"novel-resource-management/service"
+	"novel-resource-management/utils"
 )
 
 type Server struct {
@@ -26,6 +28,11 @@ type Server struct {
 
 // create new service interface
 func NewServer(gateway *client.Gateway) *Server {
+	// 初始化RSA加密解密器
+	if err := utils.InitRSACrypto(); err != nil {
+		log.Printf("警告: RSA加密解密器初始化失败: %v", err)
+	}
+
 	//network
 	network := gateway.GetNetwork("mychannel")
 
@@ -54,7 +61,8 @@ func NewServer(gateway *client.Gateway) *Server {
 
 // 方法指示器
 func (s *Server) setupRoutes() {
-	//先接路由，再接方法
+	// 先接路由，再接方法
+	
 	s.router.GET("/health", s.healthCheck)
 
 	novels := s.router.Group("/api/v1/novels")
@@ -62,13 +70,25 @@ func (s *Server) setupRoutes() {
 		//RESTFUL API
 		novels.GET("", s.getAllNovels)
 		novels.GET("/:id", s.getNovel)
-		//create
-		novels.POST("", s.createNovel)
-		//update,PUT是整体更新，PATCH是部分更新
-		novels.PUT("/:id", s.updateNovel)
 		//delete
 		novels.DELETE("/:id", s.deleteNovel)
 
+		//先不用
+		encryptedNovels.POST("", s.createNovel)
+		//update,PUT是整体更新，PATCH是部分更新
+		encryptedNovels.PUT("/:id", s.updateNovel)
+
+		/*
+		// 需要RSA加密的路由（POST和PUT）
+		encryptedNovels := novels.Group("")
+		encryptedNovels.Use(middleware.RSARequestMiddleware())
+		{
+			//create
+			encryptedNovels.POST("", s.createNovel)
+			//update,PUT是整体更新，PATCH是部分更新
+			encryptedNovels.PUT("/:id", s.updateNovel)
+		}
+		*/
 	}
 
 	users := s.router.Group("/api/v1/users")
@@ -77,15 +97,24 @@ func (s *Server) setupRoutes() {
 		users.GET("",s.getAllUserCredits)
 		users.GET("/:id",s.getUserCredit)
 
-		//create
-		users.POST("",s.createUserCredit)
-
-		//update
-		users.PUT("/:id",s.updateUserCredit)
-
 		//delete
 		users.DELETE("/:id",s.deleteUserCredit)
 
+		// 需要RSA加密的路由
+		
+		encryptedUsers := users.Group("")
+		// 虽然通常建议包名和文件夹名一致，但 Go 并不强制要求。
+		// 如果 package 和文件夹名不一致——比如文件在 middleware 目录，但声明 package mware——
+		// 你在 import 时依然写 import "novel-resource-management/middleware"，但代码中用 mware.xxx 来访问。
+		// 总之，“import 路径”（即文件夹路径）用于定位代码源文件，而“包名”决定了代码里实际的调用前缀。
+		encryptedUsers.Use(middleware.RSARequestMiddleware())
+		{
+			//create
+			encryptedUsers.POST("",s.createUserCredit)
+
+			//update
+			encryptedUsers.PUT("/:id",s.updateUserCredit)
+		}
 	}
 
 	events := s.router.Group("/api/v1/events")
@@ -93,6 +122,7 @@ func (s *Server) setupRoutes() {
 		events.GET("/listen",s.streamEvents)
 	}
 
+	
 }
 
 // Shutdown 优雅关闭服务器
@@ -505,3 +535,4 @@ func (s *Server) formatJSON(data []byte)string {
 	}
 	return result.String()
 }
+
