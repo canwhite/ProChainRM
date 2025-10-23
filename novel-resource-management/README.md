@@ -6,6 +6,8 @@ PS：先到根目录，然后到 test-network
 
 ./network.sh createChannel
 
+PS:如果 createChannel 卡住，注意查看下 9443 端口是不是被占了，kill 下
+
 # 1. Set up environment variables
 
 1. 环境变量:
