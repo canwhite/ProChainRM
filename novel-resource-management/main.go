@@ -35,11 +35,33 @@ func main(){
 		//hash and connect,确实应该先有hash，再有connect
 		client.WithHash(hash.SHA256),
 		client.WithClientConnection(clientConnection),
-		//几个timeout
-		client.WithEvaluateTimeout(5*time.Second),
-		client.WithEndorseTimeout(15*time.Second),
-		client.WithSubmitTimeout(5*time.Second),
-		client.WithCommitStatusTimeout(1*time.Minute),
+		// INSERT_YOUR_CODE
+		/*
+			这些 timeout 主要控制与 Fabric 网络交互的不同阶段的超时时间，单位是 time.Duration（如 15*time.Second）：
+
+			- client.WithEvaluateTimeout(15*time.Second)
+			   「查询 Transaction 的超时时间」
+			   用户用 gateway.Evaluate 获取链码数据（只查不写），比如 GET/查询小说等。
+			   这个超时，控制的是 read 类型（evaluate）请求，网络里如果 15 秒都没响应会报超时。
+
+			- client.WithEndorseTimeout(30*time.Second)
+			   「背书过程的超时时间」
+			   用户提交“写入”请求时，Fabric 要让各背书节点模拟执行交易并签名背书。这个过程太慢可能就会超时。
+			   这里的 30 秒主要保证集群背书时网络分布较慢时也能等一会。
+
+			- client.WithSubmitTimeout(15*time.Second)
+			   「提交到排序服务（orderer）的超时时间」
+			   交易背书好后，需发给 orderer 排序。这个主流程较快（一般不需要很长），15 秒足够。
+			
+			- client.WithCommitStatusTimeout(2*time.Minute)
+			   「等待区块最终提交的超时时间」
+			   你的交易被排序后，会入账并要等 peer 节点确认提交。
+			   这个阶段可能等得最久，因为涉及区块打包、排序网络广播等，所以时间拉长到 2 分钟。
+		*/
+		client.WithEvaluateTimeout(15*time.Second),
+		client.WithEndorseTimeout(30*time.Second),
+		client.WithSubmitTimeout(15*time.Second),
+		client.WithCommitStatusTimeout(2*time.Minute),
 	)
 	
 	if err != nil {

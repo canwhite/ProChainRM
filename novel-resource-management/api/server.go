@@ -74,9 +74,9 @@ func (s *Server) setupRoutes() {
 		novels.DELETE("/:id", s.deleteNovel)
 
 		//先不用
-		encryptedNovels.POST("", s.createNovel)
+		novels.POST("", s.createNovel)
 		//update,PUT是整体更新，PATCH是部分更新
-		encryptedNovels.PUT("/:id", s.updateNovel)
+		novels.PUT("/:id", s.updateNovel)
 
 		/*
 		// 需要RSA加密的路由（POST和PUT）
