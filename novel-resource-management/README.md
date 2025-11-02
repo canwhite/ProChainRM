@@ -32,6 +32,15 @@ source set-env.sh
 
 ./network.sh deployCC -ccn novel-basic -ccp ../novel-resource-events -ccl go -cci InitLedger
 
+//endorse 的时候有些问题, -ccv 2.0 \
+
+./network.sh deployCC \
+ -ccn novel-basic \
+ -ccp ../novel-resource-events \
+ -ccl go \
+ -cci InitLedger \
+ -ccep "OR('Org1MSP.member','Org2MSP.member')"
+
 # 3. Then invoke the chaincode
 
 // create

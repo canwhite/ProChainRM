@@ -62,7 +62,11 @@ func NewServer(gateway *client.Gateway) *Server {
 // 方法指示器
 func (s *Server) setupRoutes() {
 	// 先接路由，再接方法
-	
+
+	// 添加全局防抖中间件
+	debounce := middleware.NewDebounceMiddleware()
+	s.router.Use(debounce.Debounce())
+
 	s.router.GET("/health", s.healthCheck)
 
 	novels := s.router.Group("/api/v1/novels")
@@ -231,14 +235,13 @@ func (s *Server) updateNovel(c *gin.Context) {
 	}
 
 	var req struct {
-		ID           string `json:"id" binding:"required"`
+		// Update请求不需要ID字段，使用URL路径中的ID
 		Author       string `json:"author" binding:"required"`
 		StoryOutline string `json:"storyOutline" binding:"required"`
 		Subsections  string `json:"subsections" binding:"required"`
 		Characters   string `json:"characters" binding:"required"`
 		Items        string `json:"items" binding:"required"`
 		TotalScenes  string `json:"totalScenes" binding:"required"`
-		CreatedAt    string `json:"createdAt" binding:"omitempty"`
 		UpdatedAt    string `json:"updatedAt" binding:"omitempty"`
 	}
 

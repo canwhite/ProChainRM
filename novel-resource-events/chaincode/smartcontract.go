@@ -143,19 +143,21 @@ func (s *SmartContract) GetAllNovels(ctx contractapi.TransactionContextInterface
 func (s *SmartContract) UpdateNovel(ctx contractapi.TransactionContextInterface, id string, author string, storyOutline string,
 	subsections string, characters string, items string, totalScenes string) error {
 
-	// Check if novel exists
-	exists, err := s.NovelExists(ctx, id)
+	// 直接读取现有小说，一次性检查存在性和获取数据
+	// 避免先检查存在性再读取的双重操作导致的MVCC冲突
+	existingNovelJSON, err := ctx.GetStub().GetState(id)
 	if err != nil {
-		return fmt.Errorf("failed to check if novel exists: %v", err)
+		return fmt.Errorf("failed to read novel state: %v", err)
 	}
-	if !exists {
+	if existingNovelJSON == nil {
 		return fmt.Errorf("novel with ID %s does not exist", id)
 	}
 
-	// Get existing novel to preserve CreatedAt
-	existingNovel, err := s.ReadNovel(ctx, id)
+	// 解析现有小说数据以保留 CreatedAt
+	var existingNovel Novel
+	err = json.Unmarshal(existingNovelJSON, &existingNovel)
 	if err != nil {
-		return fmt.Errorf("failed to read existing novel: %v", err)
+		return fmt.Errorf("failed to unmarshal existing novel: %v", err)
 	}
 
 	// Create updated novel with preserved CreatedAt
