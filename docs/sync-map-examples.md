@@ -184,6 +184,13 @@ func (is *InventorySystem) Purchase(orderID, productID string, quantity int) err
 // 查看库存
 func (is *InventorySystem) CheckInventory() {
 	fmt.Println("\n=== 当前库存 ===")
+	// sync.Map 的遍历需要用 Range 方法，它接收一个回调函数：func(key, value interface{}) bool。
+	// 该函数会对 map 中的每个键值对都执行一次。如果回调返回 true，遍历继续；返回 false 则中断遍历。
+	// 例如：
+	// is.products.Range(func(key, value interface{}) bool {
+	//     fmt.Printf("商品ID: %v, 库存: %v\n", key, value)
+	//     return true // 返回 true 继续遍历
+	// })
 	is.products.Range(func(productID, quantity interface{}) bool {
 		fmt.Printf("商品 %s: %d 件\n", productID, quantity.(int))
 		return true
