@@ -6,18 +6,19 @@
 
 ### 🔍 核心对比
 
-| 特性 | 普通 `map` | `sync.Map` |
-|------|-----------|------------|
-| **并发安全** | ❌ 不安全 | ✅ 安全 |
-| **性能** | 单线程更快 | 多线程更快 |
-| **内存** | 占用少 | 占用稍多 |
-| **使用场景** | 单线程 | 多线程并发 |
+| 特性         | 普通 `map` | `sync.Map` |
+| ------------ | ---------- | ---------- |
+| **并发安全** | ❌ 不安全  | ✅ 安全    |
+| **性能**     | 单线程更快 | 多线程更快 |
+| **内存**     | 占用少     | 占用稍多   |
+| **使用场景** | 单线程     | 多线程并发 |
 
 ---
 
-## 📊 示例1：网站访问计数器
+## 📊 示例 1：网站访问计数器
 
 ### 🎯 场景描述
+
 统计每个 IP 地址的访问次数，需要处理大量并发访问请求。
 
 ### 📝 代码实现
@@ -52,6 +53,12 @@ func (vc *VisitorCounter) Visit(ip string) {
 }
 
 func (vc *VisitorCounter) PrintStats() {
+	// mutex（互斥锁）通常在以下场景使用：
+	// 1. 对非并发安全的数据结构（如普通 map、切片等）进行多个 goroutine 并发读/写时，用于保护临界区，防止数据竞争；
+	// 2. 需要确保一段代码块在同一时刻只能被一个 goroutine 执行（临界区保护）；
+	// 3. 复合操作（如：读取-修改-写入）不是原子的，需要用 mutex 保证整个操作的原子性；
+	// 4. 即使 sync.Map 已经并发安全，但当涉及“遍历 + 输出”这样复合流程时，依然可以用 mutex 避免打印时的数据竞争或交叉输出（如本例的 PrintStats 方法）；
+	// 总结：mutex 适用于保护共享资源在并发环境下的安全访问。
 	vc.mu.Lock()
 	defer vc.mu.Unlock()
 
@@ -75,7 +82,13 @@ func main() {
 	// 每个IP访问多次
 	for _, ip := range ips {
 		for i := 0; i < 10; i++ {
+			// wg其实就是一个“并发计数器”：
+			// 1. 每当你要启动一个新的goroutine时（比如这里的用户访问模拟），就先wg.Add(1)，让计数器+1 —— 表示“有1个任务正在进行”；
+			// 2. 每个goroutine结束时都要defer wg.Done()，让计数器-1 —— 相当于“完成了一个任务”；
+			// 3. 主goroutine调用wg.Wait()就像“等计数器归零”，只有全部goroutine都结束（计数器到0），主协程才会往下执行。
+			// 所以WaitGroup的本质，就是主控等所有并发任务完成的并发安全计数器！
 			wg.Add(1)
+			//自执行函数
 			go func(visitorIP string) {
 				defer wg.Done()
 				counter.Visit(visitorIP)
@@ -109,9 +122,10 @@ IP: 192.168.1.3    访问次数: 10
 
 ---
 
-## 🛒 示例2：电商库存管理系统
+## 🛒 示例 2：电商库存管理系统
 
 ### 🎯 场景描述
+
 电商平台需要处理大量并发订单，确保库存不会超卖，同时记录订单信息。
 
 ### 📝 代码实现
@@ -251,9 +265,10 @@ func main() {
 
 ---
 
-## 🎮 示例3：游戏房间管理系统
+## 🎮 示例 3：游戏房间管理系统
 
 ### 🎯 场景描述
+
 在线游戏平台需要管理多个游戏房间，支持玩家加入、离开，并实时更新房间状态。
 
 ### 📝 代码实现
@@ -425,13 +440,14 @@ func main() {
 
 1. **动态管理**：房间的创建、加入、离开、解散都是动态的
 2. **并发安全**：多个玩家同时操作不同房间不会产生冲突
-3. **自动清理**：房间人数为0时自动删除，避免内存泄漏
+3. **自动清理**：房间人数为 0 时自动删除，避免内存泄漏
 
 ---
 
-## 📡 示例4：实时聊天系统
+## 📡 示例 4：实时聊天系统
 
 ### 🎯 场景描述
+
 实时聊天系统需要处理多个用户同时发送消息，并维护在线用户列表。
 
 ### 📝 代码实现
@@ -653,6 +669,7 @@ func TestConcurrentAccess(t *testing.T) {
 ## 📋 API 参考手册
 
 ### 创建 sync.Map
+
 ```go
 var m sync.Map  // 零值即可用
 ```
@@ -660,6 +677,7 @@ var m sync.Map  // 零值即可用
 ### 主要操作
 
 #### Store(key, value interface{})
+
 ```go
 // 存储键值对
 m.Store("name", "张三")
@@ -667,6 +685,7 @@ m.Store("age", 25)
 ```
 
 #### Load(key interface{}) (value interface{}, ok bool)
+
 ```go
 // 读取键值
 if value, ok := m.Load("name"); ok {
@@ -675,12 +694,14 @@ if value, ok := m.Load("name"); ok {
 ```
 
 #### Delete(key interface{})
+
 ```go
 // 删除键值对
 m.Delete("age")
 ```
 
 #### Range(f func(key, value interface{}) bool)
+
 ```go
 // 遍历所有键值对
 m.Range(func(key, value interface{}) bool {
@@ -691,6 +712,7 @@ m.Range(func(key, value interface{}) bool {
 ```
 
 ### LoadOrStore(key, value interface{}) (actual interface{}, loaded bool)
+
 ```go
 // 如果键存在则返回，否则存储
 if actual, loaded := m.LoadOrStore("name", "李四"); loaded {
