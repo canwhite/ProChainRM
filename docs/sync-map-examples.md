@@ -307,13 +307,20 @@ type RoomManager struct {
 // 创建房间
 func (rm *RoomManager) CreateRoom(roomName, creatorID string, maxSlots int) string {
 	roomID := "ROOM_" + strconv.Itoa(rand.Intn(10000))
+	// 是的，这里存的是 *GameRoom 的地址（指针）。
+	// 这样做的好处是：
+	// 1. 若直接存结构体值，每次从 sync.Map Load 拿出来、修改（如 Players++），
+	//    修改的是副本，不会反映到实际房间数据，导致并发下房间状态不一致；
+	// 2. 存指针后，从 map.Load 得到的是同一个房间对象，多个 goroutine 修改 Players 字段时是真正作用在同一份房间；
+	// 3. 所以推荐 sync.Map 里存指针类型，确保数据唯一性和一致性，同时节省内存拷贝；
+	// 注意：如果多个 goroutine 并发修改 GameRoom 的同一个字段（如 Players），仍需加锁保护，否则可能出现数据竞争。本例因每次操作都是完整存取和覆盖（Store），并发下也尽量保证安全，但如有更复杂操作应加锁。
 	room := &GameRoom{
 		ID:       roomID,
 		Name:     roomName,
 		Players:  1,
 		MaxSlots: maxSlots,
 	}
-
+	//map。store的时候就是key，value
 	rm.rooms.Store(roomID, room)
 	fmt.Printf("🏠 房间 %s (%s) 创建成功，创建者: %s\n", roomID, roomName, creatorID)
 	return roomID
@@ -321,11 +328,13 @@ func (rm *RoomManager) CreateRoom(roomName, creatorID string, maxSlots int) stri
 
 // 加入房间
 func (rm *RoomManager) JoinRoom(roomID, playerID string) error {
+	//Load读取之后
 	room, exists := rm.rooms.Load(roomID)
 	if !exists {
 		return fmt.Errorf("房间 %s 不存在", roomID)
 	}
 
+	//类型转化i.(T)
 	gameRoom := room.(*GameRoom)
 	if gameRoom.Players >= gameRoom.MaxSlots {
 		return fmt.Errorf("房间 %s 已满", roomID)
@@ -350,6 +359,7 @@ func (rm *RoomManager) LeaveRoom(roomID, playerID string) {
 	gameRoom.Players--
 
 	if gameRoom.Players <= 0 {
+
 		rm.rooms.Delete(roomID)
 		fmt.Printf("🏠 房间 %s 已解散\n", roomID)
 	} else {
@@ -362,6 +372,7 @@ func (rm *RoomManager) LeaveRoom(roomID, playerID string) {
 // 列出所有房间
 func (rm *RoomManager) ListRooms() {
 	fmt.Println("\n=== 活跃房间列表 ===")
+
 	rm.rooms.Range(func(roomID, room interface{}) bool {
 		r := room.(*GameRoom)
 		fmt.Printf("房间 %s: %s (%d/%d 玩家)\n",
