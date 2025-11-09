@@ -105,7 +105,7 @@ func (s *SmartContract) ReadNovel(ctx contractapi.TransactionContextInterface, i
 
 // GetAllNovels returns all novels from the world state
 func (s *SmartContract) GetAllNovels(ctx contractapi.TransactionContextInterface) ([]*Novel, error) {
-	resultsIterator, err := ctx.GetStub().GetStateByRange("novel_", "novel_~")
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get state by range: %v", err)
 	}
@@ -426,7 +426,7 @@ func (s *SmartContract) ReadUserCredit(ctx contractapi.TransactionContextInterfa
 // 多个查
 func (s *SmartContract) GetAllUserCredits(ctx contractapi.TransactionContextInterface) ([]*UserCredit, error) {
 
-	resultsIterator, err := ctx.GetStub().GetStateByRange("usercredit_", "usercredit_~")
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
 	if err != nil {
 		return nil, fmt.Errorf("get state by range failed:%v", err)
 	}
@@ -441,10 +441,19 @@ func (s *SmartContract) GetAllUserCredits(ctx contractapi.TransactionContextInte
 		if err != nil {
 			return nil, fmt.Errorf("get next failed:%v", err)
 		}
+
+		// 过滤出UserCredit类型的数据
 		var userCredit UserCredit
 		err = json.Unmarshal(queryResponse.Value, &userCredit)
 		if err != nil {
-			return nil, fmt.Errorf("unmarshal failed:%v", err)
+			// 如果不是UserCredit类型，跳过
+			continue
+		}
+
+		// 验证UserCredit结构体字段
+		if userCredit.UserID == "" {
+			// 如果不是有效的UserCredit，跳过
+			continue
 		}
 
 		// Ensure UpdatedAt is not empty for schema compliance
