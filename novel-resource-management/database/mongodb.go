@@ -17,12 +17,12 @@ import (
 
 // MongoDBConfig MongoDB连接配置
 type MongoDBConfig struct {
-	URI            string        `json:"uri" yaml:"uri"`
-	Database       string        `json:"database" yaml:"database"`
-	Timeout        time.Duration `json:"timeout" yaml:"timeout"`
-	MaxPoolSize    uint64        `json:"max_pool_size" yaml:"max_pool_size"`
-	MinPoolSize    uint64        `json:"min_pool_size" yaml:"min_pool_size"`
-	MaxConnIdleTTL time.Duration `json:"max_conn_idle_ttl" yaml:"max_conn_idle_ttl"`
+	URI            string
+	Database       string
+	Timeout        time.Duration
+	MaxPoolSize    uint64
+	MinPoolSize    uint64
+	MaxConnIdleTTL time.Duration
 }
 
 // DefaultMongoDBConfig 默认MongoDB配置
@@ -45,6 +45,18 @@ type MongoDBInstance struct {
 	mu       sync.RWMutex
 }
 
+
+/**
+var 是 Go 中声明变量的关键字。这里的写法叫分组变量声明：
+var (
+	mongoInstance *MongoDBInstance
+	mongoOnce     sync.Once
+)
+
+等价于分开写：
+var mongoInstance *MongoDBInstance
+var mongoOnce sync.Once
+*/
 var (
 	mongoInstance *MongoDBInstance
 	mongoOnce     sync.Once
@@ -97,6 +109,7 @@ func loadMongoConfig() *MongoDBConfig {
 
 // GetMongoInstance 获取MongoDB单例实例（自动初始化）
 func GetMongoInstance() *MongoDBInstance {
+	//sync.Once的读方法，内置一个匿名函数
 	mongoOnce.Do(func() {
 		// 加载配置
 		config := loadMongoConfig()
@@ -108,6 +121,7 @@ func GetMongoInstance() *MongoDBInstance {
 
 		// 自动连接
 		if err := mongoInstance.Connect(); err != nil {
+			//抛出错误的一种方式
 			log.Fatalf("MongoDB自动连接失败: %v", err)
 		}
 
@@ -189,7 +203,9 @@ func (m *MongoDBInstance) Disconnect() error {
 
 // GetClient 获取MongoDB客户端
 func (m *MongoDBInstance) GetClient() *mongo.Client {
+	//读锁
 	m.mu.RLock()
+	//延迟执行，test在最前面
 	defer m.mu.RUnlock()
 
 	if m.client == nil {
@@ -223,6 +239,7 @@ func (m *MongoDBInstance) IsConnected() bool {
 		return false
 	}
 
+	//设置timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -230,7 +247,7 @@ func (m *MongoDBInstance) IsConnected() bool {
 	return err == nil
 }
 
-// GetStats 获取连接统计信息
+// GetStats 获取连接统计信息，这个是一个很有意思的使用
 func (m *MongoDBInstance) GetStats() map[string]interface{} {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -241,6 +258,7 @@ func (m *MongoDBInstance) GetStats() map[string]interface{} {
 		}
 	}
 
+	//context解决的是泄漏的问题
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -249,6 +267,7 @@ func (m *MongoDBInstance) GetStats() map[string]interface{} {
 		"serverStatus": 1,
 	}).DecodeBytes()
 
+	//直接定义和返回map
 	stats := map[string]interface{}{
 		"connected":   m.IsConnected(),
 		"database":    m.config.Database,
