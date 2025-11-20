@@ -4,11 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/joho/godotenv"
 )
 
 // MongoDBConfig MongoDB连接配置
@@ -46,12 +50,68 @@ var (
 	mongoOnce     sync.Once
 )
 
-// GetMongoInstance 获取MongoDB单例实例
+// loadMongoConfig 从环境变量加载配置
+func loadMongoConfig() *MongoDBConfig {
+	// 尝试加载 .env 文件
+	if err := godotenv.Load(); err != nil {
+		log.Printf("未找到 .env 文件，使用系统环境变量: %v", err)
+	}
+
+	config := DefaultMongoDBConfig()
+
+	// 从环境变量读取配置
+	if uri := os.Getenv("MONGODB_URI"); uri != "" {
+		config.URI = uri
+	}
+
+	if database := os.Getenv("MONGODB_DATABASE"); database != "" {
+		config.Database = database
+	}
+
+	if timeout := os.Getenv("MONGODB_TIMEOUT"); timeout != "" {
+		if duration, err := time.ParseDuration(timeout); err == nil {
+			config.Timeout = duration
+		}
+	}
+
+	if maxPool := os.Getenv("MONGODB_MAX_POOL_SIZE"); maxPool != "" {
+		if size, err := strconv.ParseUint(maxPool, 10, 64); err == nil {
+			config.MaxPoolSize = size
+		}
+	}
+
+	if minPool := os.Getenv("MONGODB_MIN_POOL_SIZE"); minPool != "" {
+		if size, err := strconv.ParseUint(minPool, 10, 64); err == nil {
+			config.MinPoolSize = size
+		}
+	}
+
+	if idleTTL := os.Getenv("MONGODB_MAX_CONN_IDLE_TTL"); idleTTL != "" {
+		if duration, err := time.ParseDuration(idleTTL); err == nil {
+			config.MaxConnIdleTTL = duration
+		}
+	}
+
+	return config
+}
+
+// GetMongoInstance 获取MongoDB单例实例（自动初始化）
 func GetMongoInstance() *MongoDBInstance {
 	mongoOnce.Do(func() {
+		// 加载配置
+		config := loadMongoConfig()
+
+		// 创建实例
 		mongoInstance = &MongoDBInstance{
-			config: DefaultMongoDBConfig(),
+			config: config,
 		}
+
+		// 自动连接
+		if err := mongoInstance.Connect(); err != nil {
+			log.Fatalf("MongoDB自动连接失败: %v", err)
+		}
+
+		log.Printf("✅ MongoDB自动连接成功! 数据库: %s", config.Database)
 	})
 	return mongoInstance
 }

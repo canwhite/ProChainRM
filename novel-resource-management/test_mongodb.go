@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"novel-resource-management/database"
@@ -12,38 +11,17 @@ import (
 )
 
 func main() {
-	fmt.Println("=== MongoDB单例测试开始 ===")
+	fmt.Println("=== MongoDB 简化测试 ===")
 
-	// 1. 测试获取单例实例
-	fmt.Println("\n1. 测试获取单例实例")
+	// 1. 获取实例（自动加载配置和连接）
+	fmt.Println("\n1. 获取MongoDB实例...")
 	mongoInstance := database.GetMongoInstance()
-	fmt.Printf("MongoDB实例地址: %p\n", mongoInstance)
+	fmt.Printf("✅ 获取实例成功: %p\n", mongoInstance)
 
-	// 再次获取，应该是同一个实例
-	mongoInstance2 := database.GetMongoInstance()
-	fmt.Printf("第二次获取实例地址: %p\n", mongoInstance2)
-	if mongoInstance == mongoInstance2 {
-		fmt.Println("✅ 单例模式工作正常")
-	} else {
-		fmt.Println("❌ 单例模式失败")
-	}
-
-	// 2. 测试从环境变量初始化
-	fmt.Println("\n2. 测试从环境变量初始化")
-	err := database.InitMongoDBFromEnv()
-	if err != nil {
-		fmt.Printf("⚠️  环境变量初始化失败，使用默认配置: %v\n", err)
-		// 手动配置并连接
-		config := database.DefaultMongoDBConfig()
-		config.URI = "mongodb://localhost:27017"
-		config.Database = "test_novel_rm"
-		err = mongoInstance.WithConfig(config).Connect()
-		if err != nil {
-			log.Fatalf("❌ MongoDB连接失败: %v", err)
-		}
-	} else {
-		fmt.Println("✅ 从环境变量初始化成功")
-	}
+	// 2. 直接获取数据库（无需手动初始化）
+	fmt.Println("\n2. 直接获取数据库...")
+	db := mongoInstance.GetDatabase()
+	fmt.Printf("✅ 数据库名称: %s\n", db.Name())
 
 	// 3. 测试连接状态
 	fmt.Println("\n3. 测试连接状态")
@@ -51,13 +29,11 @@ func main() {
 		fmt.Println("✅ MongoDB连接正常")
 	} else {
 		fmt.Println("❌ MongoDB连接异常")
+		return
 	}
 
-	// 4. 测试获取数据库和集合
-	fmt.Println("\n4. 测试获取数据库和集合")
-	db := mongoInstance.GetDatabase()
-	fmt.Printf("数据库名称: %s\n", db.Name())
-
+	// 4. 测试获取集合
+	fmt.Println("\n4. 测试获取集合")
 	userCreditCollection := mongoInstance.GetCollection("user_credits")
 	novelCollection := mongoInstance.GetCollection("novels")
 	fmt.Printf("用户积分集合: %s\n", userCreditCollection.Name())
@@ -76,7 +52,7 @@ func main() {
 	}
 
 	// 先删除可能存在的测试数据
-	_, err = userCreditCollection.DeleteOne(context.Background(), bson.M{"user_id": "test_user_001"})
+	_, err := userCreditCollection.DeleteOne(context.Background(), bson.M{"user_id": "test_user_001"})
 	if err != nil {
 		fmt.Printf("清理测试数据失败: %v\n", err)
 	}
