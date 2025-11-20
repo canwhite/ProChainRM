@@ -90,3 +90,32 @@ func (us *UserCreditService) GetAllUserCredits() ([]map[string]interface{}, erro
 
 	return data, nil
 }
+
+// ConsumeUserToken 消费用户token，每次调用减少一个token，直到减少到0
+func (us *UserCreditService) ConsumeUserToken(userId string) error {
+	// 先读取当前用户积分信息
+	userCredit, err := us.ReadUserCredit(userId)
+	if err != nil {
+		return fmt.Errorf("读取用户积分失败: %v", err)
+	}
+
+	// 解析当前积分信息
+b
+
+	// 检查token是否足够
+	if credit <= 0 {
+		return fmt.Errorf("用户 %s 的token不足，当前剩余: %d", userId, credit)
+	}
+
+	// 更新积分信息：减少1个token，增加已使用数量
+	updatedCredit := credit - 1
+	updatedTotalUsed := totalUsed + 1
+
+	// 调用现有的UpdateUserCredit方法更新链上数据
+	err = us.UpdateUserCredit(userId, updatedCredit, updatedTotalUsed, totalRecharge)
+	if err != nil {
+		return fmt.Errorf("更新用户积分失败: %v", err)
+	}
+
+	return nil
+}

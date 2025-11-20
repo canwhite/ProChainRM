@@ -105,12 +105,12 @@ func (s *Server) setupRoutes() {
 		users.DELETE("/:id",s.deleteUserCredit)
 
 		// 需要RSA加密的路由
-		
+
 		encryptedUsers := users.Group("")
 		// 虽然通常建议包名和文件夹名一致，但 Go 并不强制要求。
 		// 如果 package 和文件夹名不一致——比如文件在 middleware 目录，但声明 package mware——
 		// 你在 import 时依然写 import "novel-resource-management/middleware"，但代码中用 mware.xxx 来访问。
-		// 总之，“import 路径”（即文件夹路径）用于定位代码源文件，而“包名”决定了代码里实际的调用前缀。
+		// 总之，"import 路径"（即文件夹路径）用于定位代码源文件，而"包名"决定了代码里实际的调用前缀。
 		encryptedUsers.Use(middleware.RSARequestMiddleware())
 		{
 			//create
@@ -118,6 +118,9 @@ func (s *Server) setupRoutes() {
 
 			//update
 			encryptedUsers.PUT("/:id",s.updateUserCredit)
+
+			// token消费接口 - 需要RSA加密
+			encryptedUsers.POST("/:id/consume-token", s.consumeUserToken)
 		}
 	}
 
@@ -515,6 +518,29 @@ func (s *Server)deleteUserCredit(c * gin.Context){
 	c.JSON(http.StatusOK,gin.H{
 		"message":"delete successfully!",
 		"id":id,
+	})
+}
+
+func (s *Server) consumeUserToken(c *gin.Context) {
+	userId := c.Param("id")
+	if userId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "can not get user id",
+		})
+		return
+	}
+
+	// 调用service层的ConsumeUserToken方法
+	if err := s.creditService.ConsumeUserToken(userId); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "consume token successfully",
+		"id":  userId,
 	})
 }
 

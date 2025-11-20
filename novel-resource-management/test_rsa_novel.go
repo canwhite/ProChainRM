@@ -77,6 +77,9 @@ func main() {
 	// 测试5：错误处理
 	testErrorHandling()
 
+	// 测试6：token消费接口
+	testConsumeUserTokenAPI()
+
 	fmt.Println("============================")
 	fmt.Println("🏁 Novel RSA加密测试完成")
 }
@@ -423,6 +426,101 @@ func diagnoseKeyFiles() {
 		}
 	}
 	
+	fmt.Println("")
+}
+
+// testConsumeUserTokenAPI 测试token消费接口
+func testConsumeUserTokenAPI() {
+	fmt.Println("6️⃣  测试token消费接口...")
+
+	// 测试用户ID
+	userId := "usercredit_001"
+
+	// 构造请求数据
+	requestData := map[string]interface{}{
+		"timestamp": time.Now().Unix(),
+		"userId":    userId,
+	}
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		fmt.Printf("❌ 序列化token消费请求数据失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("token消费请求原始数据: %s\n", string(jsonData))
+
+	// 使用RSA工具加密
+	encryptedData, err := utils.EncryptWithRSA(string(jsonData))
+	if err != nil {
+		fmt.Printf("❌ 加密token消费请求数据失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("加密成功，数据长度: %d\n", len(encryptedData))
+
+	// 创建加密请求（使用与小说API相同的结构）
+	encryptedRequest := EncryptedRequest{
+		EncryptedData: encryptedData,
+	}
+
+	requestJSON, err := json.Marshal(encryptedRequest)
+	if err != nil {
+		fmt.Printf("❌ 序列化token消费加密请求失败: %v\n", err)
+		return
+	}
+
+	// 构造请求URL
+	consumeTokenURL := BASE_URL + "/api/v1/users/" + userId + "/consume-token"
+
+	// 创建HTTP请求
+	req, err := http.NewRequest("POST", consumeTokenURL, strings.NewReader(string(requestJSON)))
+	if err != nil {
+		fmt.Printf("❌ 创建token消费请求失败: %v\n", err)
+		return
+	}
+
+	// 设置请求头（与小说API加密请求保持一致）
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Encrypted-Request", "true")
+
+	// 发送请求
+	client := &http.Client{Timeout: 30 * time.Second}
+	fmt.Printf("发送token消费请求到: %s\n", consumeTokenURL)
+	fmt.Printf("请求体前100字符: %s...\n", string(requestJSON)[:min(100, len(requestJSON))])
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("❌ token消费请求发送失败: %v\n", err)
+		fmt.Println("⚠️  这可能是因为服务器未运行或网络问题")
+		return
+	}
+	defer resp.Body.Close()
+
+	// 读取响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("❌ 读取token消费响应失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("HTTP状态码: %d\n", resp.StatusCode)
+	fmt.Printf("响应内容: %s\n", string(body))
+
+	// 分析响应结果
+	switch resp.StatusCode {
+	case 200:
+		fmt.Println("✅ token消费接口调用成功")
+	case 404:
+		fmt.Println("⚠️  token消费接口返回404 - 服务器未运行或路由不存在")
+	case 500:
+		fmt.Println("⚠️  token消费接口返回500 - RSA解密成功但业务逻辑失败（可能没有fabric网络）")
+	case 400:
+		fmt.Println("⚠️  token消费接口返回400 - 请求参数错误或RSA解密失败")
+	default:
+		fmt.Printf("❌ token消费接口返回未知状态码: %d\n", resp.StatusCode)
+	}
+
 	fmt.Println("")
 }
 
