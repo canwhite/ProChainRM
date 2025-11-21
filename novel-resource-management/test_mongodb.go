@@ -33,9 +33,12 @@ func main() {
 
 	// 4. 测试获取集合
 	fmt.Println("\n4. 测试获取集合")
+	//拿到collection
 	userCreditCollection := mongoInstance.GetCollection("user_credits")
 	novelCollection := mongoInstance.GetCollection("novels")
 	creditHistoryCollection := mongoInstance.GetCollection("credit_histories")
+
+		
 	fmt.Printf("用户积分集合: %s\n", userCreditCollection.Name())
 	fmt.Printf("小说集合: %s\n", novelCollection.Name())
 	fmt.Printf("积分历史集合: %s\n", creditHistoryCollection.Name())

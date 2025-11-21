@@ -100,7 +100,12 @@ func (us *UserCreditService) ConsumeUserToken(userId string) error {
 	}
 
 	// 解析当前积分信息
-b
+	// ReadUserCredit方法返回的是map[string]interface{}类型，其中数值类型在JSON解析后会变成float64类型
+	// 所以需要使用类型断言.(float64)先转换为float64，再转换为int类型
+	// userCredit["credit"] 从map中获取credit字段的值
+	credit := int(userCredit["credit"].(float64))
+	totalUsed := int(userCredit["totalUsed"].(float64))
+	totalRecharge := int(userCredit["totalRecharge"].(float64))
 
 	// 检查token是否足够
 	if credit <= 0 {
