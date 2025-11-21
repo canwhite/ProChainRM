@@ -188,23 +188,47 @@ func runQueryExamples() {
 func queryAllUserCredits() {
 	fmt.Println("\n🔍 1. 查询所有用户积分")
 
+	// 📖 小白解释：获取MongoDB数据库连接，然后拿到"user_credits"这个表（集合）
+	// 就像拿到一个Excel文件，然后打开名为"user_credits"的工作表
 	collection := database.GetMongoInstance().GetCollection("user_credits")
 
+	// 📖 小白解释：在数据库中查找所有数据
+	// context.Background() 表示这是一个独立的操作，没有超时限制
+	// bson.M{} 是一个空的查询条件，相当于SQL中的"SELECT * FROM"，即查找所有记录
+	// cursor 就像一个指向查询结果的指针，需要遍历它才能看到具体数据
 	cursor, err := collection.Find(context.Background(), bson.M{})
 	if err != nil {
 		fmt.Printf("❌ 查询失败: %v\n", err)
 		return
 	}
+
+	// 📖 小白解释：defer就像一个"事后清理"的承诺
+	// 无论函数是正常结束还是因为错误提前退出，这行代码都会在最后执行
+	// 关闭cursor可以释放数据库资源，防止内存泄漏
 	defer cursor.Close(context.Background())
 
+	// 📖 小白解释：创建一个空的UserCredit数组，用来存放从数据库查出来的所有用户数据
+	// 就像准备一个空篮子，等下要把超市里查到的所有商品都放进去
 	var userCredits []database.UserCredit
+
+	// 📖 小白解释：把cursor（查询结果）中的所有数据一次性全部读取到userCredits数组中
+	// &userCredits 表示把这个数组的内存地址传给All方法，让它知道数据要存到哪里
+	// 就像告诉收银员："请把所有商品都装到这个篮子里"
 	err = cursor.All(context.Background(), &userCredits)
 	if err != nil {
 		fmt.Printf("❌ 解析失败: %v\n", err)
 		return
 	}
 
+	// 📖 小白解释：打印查找到的用户总数
+	// len(userCredits) 就是数组userCredits中元素的个数
 	fmt.Printf("✅ 找到 %d 个用户:\n", len(userCredits))
+
+	// 📖 小白解释：遍历所有用户数据并打印每个用户的信息
+	// for _, user := range userCredentials 的意思是：
+	//   range userCredits：逐个取出userCredits数组中的用户数据
+	//   user：当前取出的这个用户数据
+	//   _：表示我们不关心索引（第几个用户），只关心用户数据本身
 	for _, user := range userCredits {
 		fmt.Printf("   👤 %s: %d积分 (已用:%d, 充值:%d)\n",
 			user.UserID, user.Credit, user.TotalUsed, user.TotalRecharge)
@@ -215,10 +239,19 @@ func queryAllUserCredits() {
 func queryUsersWithHighCredit() {
 	fmt.Println("\n🔍 2. 查询积分大于100的用户")
 
+	// 📖 小白解释：获取数据库连接，拿到用户积分表
 	collection := database.GetMongoInstance().GetCollection("user_credits")
 
+	// 📖 小白解释：设置查询条件，只查找积分大于100的用户
+	// bson.M{"credit": bson.M{"$gt": 100}} 的含义：
+	//   - 外层的 bson.M{"credit": ...} 表示要查询credit字段
+	//   - 内层的 bson.M{"$gt": 100} 表示大于100
+	//   - "$gt" 是MongoDB中的"大于"操作符（Greater Than）
+	// 相当于SQL中的：WHERE credit > 100
 	filter := bson.M{"credit": bson.M{"$gt": 100}}
 
+	// 📖 小白解释：使用设置好的条件查询数据库
+	// 只会返回积分大于100的用户记录
 	cursor, err := collection.Find(context.Background(), filter)
 	if err != nil {
 		fmt.Printf("❌ 查询失败: %v\n", err)
@@ -226,14 +259,20 @@ func queryUsersWithHighCredit() {
 	}
 	defer cursor.Close(context.Background())
 
+	// 📖 小白解释：创建数组来存放查询结果
 	var userCredits []database.UserCredit
+
+	// 📖 小白解释：将查询结果读取到数组中
 	err = cursor.All(context.Background(), &userCredits)
 	if err != nil {
 		fmt.Printf("❌ 解析失败: %v\n", err)
 		return
 	}
 
+	// 📖 小白解释：打印符合条件用户的总数
 	fmt.Printf("✅ 找到 %d 个积分大于100的用户:\n", len(userCredits))
+
+	// 📖 小白解释：遍历所有符合条件的用户，显示他们的积分
 	for _, user := range userCredits {
 		fmt.Printf("   💰 %s: %d积分\n", user.UserID, user.Credit)
 	}
@@ -243,8 +282,16 @@ func queryUsersWithHighCredit() {
 func queryUsersWithCreditRange() {
 	fmt.Println("\n🔍 3. 查询积分在50-200之间的用户")
 
+	// 📖 小白解释：获取数据库连接，拿到用户积分表
 	collection := database.GetMongoInstance().GetCollection("user_credits")
 
+	// 📖 小白解释：设置范围查询条件，查找积分在50到200之间的用户
+	// bson.M 的结构解释：
+	//   - "credit": bson.M{...} 表示要查询credit字段
+	//   - "$gte": 50 表示大于等于50（Greater Than or Equal）
+	//   - "$lte": 200 表示小于等于200（Less Than or Equal）
+	// 相当于SQL中的：WHERE credit >= 50 AND credit <= 200
+	// 或者更简洁的：WHERE credit BETWEEN 50 AND 200
 	filter := bson.M{
 		"credit": bson.M{
 			"$gte": 50,
@@ -252,6 +299,8 @@ func queryUsersWithCreditRange() {
 		},
 	}
 
+	// 📖 小白解释：使用范围条件查询数据库
+	// 只会返回积分在50-200之间的用户记录
 	cursor, err := collection.Find(context.Background(), filter)
 	if err != nil {
 		fmt.Printf("❌ 查询失败: %v\n", err)
@@ -259,14 +308,21 @@ func queryUsersWithCreditRange() {
 	}
 	defer cursor.Close(context.Background())
 
+	// 📖 小白解释：创建数组来存放查询结果
 	var userCredits []database.UserCredit
+
+	// 📖 小白解释：将查询结果读取到数组中
 	err = cursor.All(context.Background(), &userCredits)
 	if err != nil {
 		fmt.Printf("❌ 解析失败: %v\n", err)
 		return
 	}
 
+	// 📖 小白解释：打印符合条件的用户总数
 	fmt.Printf("✅ 找到 %d 个积分在50-200之间的用户:\n", len(userCredits))
+
+	// 📖 小白解释：遍历所有符合条件的用户，显示他们的积分
+	// 使用📊表情符号表示这是一个统计/数据分析的结果
 	for _, user := range userCredits {
 		fmt.Printf("   📊 %s: %d积分\n", user.UserID, user.Credit)
 	}
