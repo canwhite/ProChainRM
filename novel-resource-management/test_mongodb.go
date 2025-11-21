@@ -7,11 +7,10 @@ import (
 
 	"novel-resource-management/database"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
-	fmt.Println("=== MongoDB 简化测试 ===")
+	fmt.Println("=== MongoDB 链码结构一致测试 ===")
 
 	// 1. 获取实例（自动加载配置和连接）
 	fmt.Println("\n1. 获取MongoDB实例...")
@@ -36,24 +35,25 @@ func main() {
 	fmt.Println("\n4. 测试获取集合")
 	userCreditCollection := mongoInstance.GetCollection("user_credits")
 	novelCollection := mongoInstance.GetCollection("novels")
+	creditHistoryCollection := mongoInstance.GetCollection("credit_histories")
 	fmt.Printf("用户积分集合: %s\n", userCreditCollection.Name())
 	fmt.Printf("小说集合: %s\n", novelCollection.Name())
+	fmt.Printf("积分历史集合: %s\n", creditHistoryCollection.Name())
 
-	// 5. 测试插入数据
+	// 5. 测试插入用户积分数据（与链码结构一致）
 	fmt.Println("\n5. 测试插入用户积分数据")
-	//短指针声明
+	currentTimeStr := time.Now().Format("2006-01-02 15:04:05")
 	testUserCredit := database.UserCredit{
 		UserID:        "test_user_001",
 		Credit:        100,
 		TotalUsed:     5,
 		TotalRecharge: 100,
-		IsActive:      true,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		CreatedAt:     currentTimeStr,
+		UpdatedAt:     currentTimeStr,
 	}
 
 	// 先删除可能存在的测试数据
-	_, err := userCreditCollection.DeleteOne(context.Background(), bson.M{"user_id": "test_user_001"})
+	_, err := userCreditCollection.DeleteOne(context.Background(), bson.M{"userId": "test_user_001"})
 	if err != nil {
 		fmt.Printf("清理测试数据失败: %v\n", err)
 	}
@@ -66,23 +66,21 @@ func main() {
 		fmt.Printf("✅ 插入用户积分成功，ID: %s\n", result.InsertedID)
 	}
 
-	// 6. 测试插入小说数据
+	// 6. 测试插入小说数据（与链码结构一致）
 	fmt.Println("\n6. 测试插入小说数据")
 	testNovel := database.Novel{
-		Title:       "测试小说",
-		Author:      "测试作者",
-		Category:    "玄幻",
-		Description: "这是一本测试小说",
-		Tags:        []string{"玄幻", "测试", "小说"},
-		Price:       9.99,
-		IsPublished: true,
-		ViewCount:   0,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		Author:       "测试作者",
+		StoryOutline: "这是一个测试小说的故事大纲",
+		Subsections:  "第一章,第二章,第三章",
+		Characters:   "主角A,配角B,反派C",
+		Items:        "神秘宝物,魔法卷轴",
+		TotalScenes:  "10",
+		CreatedAt:    currentTimeStr,
+		UpdatedAt:    currentTimeStr,
 	}
 
 	// 先删除可能存在的测试数据
-	_, err = novelCollection.DeleteOne(context.Background(), bson.M{"title": "测试小说"})
+	_, err = novelCollection.DeleteOne(context.Background(), bson.M{"author": "测试作者"})
 	if err != nil {
 		fmt.Printf("清理测试小说失败: %v\n", err)
 	}
@@ -95,51 +93,83 @@ func main() {
 		fmt.Printf("✅ 插入小说成功，ID: %s\n", result.InsertedID)
 	}
 
-	// 7. 测试查询数据
-	fmt.Println("\n7. 测试查询用户积分数据")
+	// 7. 测试插入积分历史数据（与链码结构一致）
+	fmt.Println("\n7. 测试插入积分历史数据")
+	testCreditHistory := database.CreditHistory{
+		UserID:      "test_user_001",
+		Amount:      -5,                  // 消费5积分
+		Type:        "consume",
+		Description: "购买小说章节",
+		Timestamp:   currentTimeStr,
+		NovelID:     "novel_001",
+	}
+
+	// 插入积分历史
+	result, err = creditHistoryCollection.InsertOne(context.Background(), testCreditHistory)
+	if err != nil {
+		fmt.Printf("❌ 插入积分历史失败: %v\n", err)
+	} else {
+		fmt.Printf("✅ 插入积分历史成功，ID: %s\n", result.InsertedID)
+	}
+
+	// 8. 测试查询用户积分数据
+	fmt.Println("\n8. 测试查询用户积分数据")
 	var foundUserCredit database.UserCredit
-	err = userCreditCollection.FindOne(context.Background(), bson.M{"user_id": "test_user_001"}).Decode(&foundUserCredit)
+	err = userCreditCollection.FindOne(context.Background(), bson.M{"userId": "test_user_001"}).Decode(&foundUserCredit)
 	if err != nil {
 		fmt.Printf("❌ 查询用户积分失败: %v\n", err)
 	} else {
 		fmt.Printf("✅ 查询用户积分成功:\n")
 		fmt.Printf("   用户ID: %s\n", foundUserCredit.UserID)
-		fmt.Printf("   积分: %d (类型: %T)\n", foundUserCredit.Credit, foundUserCredit.Credit) // 展示类型信息
-		fmt.Printf("   已使用: %d (类型: %T)\n", foundUserCredit.TotalUsed, foundUserCredit.TotalUsed)
-		fmt.Printf("   总充值: %d (类型: %T)\n", foundUserCredit.TotalRecharge, foundUserCredit.TotalRecharge)
-		fmt.Printf("   创建时间: %s\n", foundUserCredit.CreatedAt.Format("2006-01-02 15:04:05"))
-		fmt.Printf("   ✅ 无需类型转换！直接使用int类型！\n")
+		fmt.Printf("   积分: %d\n", foundUserCredit.Credit)
+		fmt.Printf("   已使用: %d\n", foundUserCredit.TotalUsed)
+		fmt.Printf("   总充值: %d\n", foundUserCredit.TotalRecharge)
+		fmt.Printf("   创建时间: %s\n", foundUserCredit.CreatedAt)
 	}
 
-	// 8. 测试查询小说数据
-	fmt.Println("\n8. 测试查询小说数据")
+	// 9. 测试查询小说数据
+	fmt.Println("\n9. 测试查询小说数据")
 	var foundNovel database.Novel
-	err = novelCollection.FindOne(context.Background(), bson.M{"title": "测试小说"}).Decode(&foundNovel)
+	err = novelCollection.FindOne(context.Background(), bson.M{"author": "测试作者"}).Decode(&foundNovel)
 	if err != nil {
 		fmt.Printf("❌ 查询小说失败: %v\n", err)
 	} else {
 		fmt.Printf("✅ 查询小说成功:\n")
-		fmt.Printf("   标题: %s\n", foundNovel.Title)
 		fmt.Printf("   作者: %s\n", foundNovel.Author)
-		fmt.Printf("   分类: %s\n", foundNovel.Category)
-		fmt.Printf("   价格: %.2f (类型: %T)\n", foundNovel.Price, foundNovel.Price)
-		fmt.Printf("   标签: %v\n", foundNovel.Tags)
-		fmt.Printf("   是否发布: %t (类型: %T)\n", foundNovel.IsPublished, foundNovel.IsPublished)
+		fmt.Printf("   故事大纲: %s\n", foundNovel.StoryOutline)
+		fmt.Printf("   章节: %s\n", foundNovel.Subsections)
+		fmt.Printf("   角色: %s\n", foundNovel.Characters)
+		fmt.Printf("   物品: %s\n", foundNovel.Items)
+		fmt.Printf("   总场景数: %s\n", foundNovel.TotalScenes)
 	}
 
-	// 9. 测试更新数据（模拟消费token）
-	fmt.Println("\n9. 测试更新数据（模拟消费token）")
+	// 10. 测试查询积分历史数据
+	fmt.Println("\n10. 测试查询积分历史数据")
+	var foundCreditHistory database.CreditHistory
+	err = creditHistoryCollection.FindOne(context.Background(), bson.M{"userId": "test_user_001"}).Decode(&foundCreditHistory)
+	if err != nil {
+		fmt.Printf("❌ 查询积分历史失败: %v\n", err)
+	} else {
+		fmt.Printf("✅ 查询积分历史成功:\n")
+		fmt.Printf("   用户ID: %s\n", foundCreditHistory.UserID)
+		fmt.Printf("   变动金额: %d\n", foundCreditHistory.Amount)
+		fmt.Printf("   类型: %s\n", foundCreditHistory.Type)
+		fmt.Printf("   描述: %s\n", foundCreditHistory.Description)
+		fmt.Printf("   时间戳: %s\n", foundCreditHistory.Timestamp)
+		fmt.Printf("   小说ID: %s\n", foundCreditHistory.NovelID)
+	}
+
+	// 11. 测试更新数据（模拟积分消费）
+	fmt.Println("\n11. 测试更新数据（模拟积分消费）")
 	if foundUserCredit.Credit > 0 {
-		// filter
-		filter := bson.M{"user_id": "test_user_001"}
-		// update
+		filter := bson.M{"userId": "test_user_001"}
 		update := bson.M{
 			"$inc": bson.M{
-				"credit":     -1,        // 直接使用int
-				"total_used": 1,         // 直接使用int
+				"credit":     -1,
+				"totalUsed": 1,
 			},
 			"$set": bson.M{
-				"updated_at": time.Now(),
+				"updatedAt": time.Now().Format("2006-01-02 15:04:05"),
 			},
 		}
 
@@ -149,134 +179,36 @@ func main() {
 		} else {
 			fmt.Printf("✅ 更新用户积分成功，匹配记录: %d，修改记录: %d\n",
 				updateResult.MatchedCount, updateResult.ModifiedCount)
-
-			// 重新查询验证结果
-			var updatedUserCredit database.UserCredit
-			err = userCreditCollection.FindOne(context.Background(), filter).Decode(&updatedUserCredit)
-			if err == nil {
-				fmt.Printf("   更新后积分: %d -> %d\n", foundUserCredit.Credit, updatedUserCredit.Credit)
-				fmt.Printf("   更新后已使用: %d -> %d\n", foundUserCredit.TotalUsed, updatedUserCredit.TotalUsed)
-				fmt.Printf("   ✅ BSON操作无需类型转换！\n")
-			}
 		}
 	}
 
-	// 10. 测试条件查询
-	fmt.Println("\n10. 测试条件查询")
-	cursor, err := userCreditCollection.Find(context.Background(), bson.M{
-		"credit": bson.M{"$gte": 50},
-	}, options.Find().SetLimit(10))
-	if err != nil {
-		fmt.Printf("❌ 条件查询失败: %v\n", err)
-	} else {
-		defer cursor.Close(context.Background())
-
-		var richUsers []database.UserCredit
-		err = cursor.All(context.Background(), &richUsers)
-		if err != nil {
-			fmt.Printf("❌ 解析查询结果失败: %v\n", err)
-		} else {
-			fmt.Printf("✅ 查询积分>=50的用户，找到 %d 个:\n", len(richUsers))
-			for _, user := range richUsers {
-				fmt.Printf("   用户: %s, 积分: %d\n", user.UserID, user.Credit)
-			}
-		}
-	}
-
-	// 11. 测试获取连接统计信息
-	fmt.Println("\n11. 测试获取连接统计信息")
-	stats := mongoInstance.GetStats()
-	fmt.Printf("✅ 连接统计信息:\n")
-	for key, value := range stats {
-		fmt.Printf("   %s: %v\n", key, value)
-	}
-
-	// 12. 测试单例在不同地方的使用
-	fmt.Println("\n12. 测试单例在不同地方的使用")
-	testSingletonInDifferentFunction()
-
-	// 13. 清理测试数据
-	fmt.Println("\n13. 清理测试数据")
-	_, err = userCreditCollection.DeleteOne(context.Background(), bson.M{"user_id": "test_user_001"})
+	// 12. 清理测试数据
+	fmt.Println("\n12. 清理测试数据")
+	_, err = userCreditCollection.DeleteOne(context.Background(), bson.M{"userId": "test_user_001"})
 	if err != nil {
 		fmt.Printf("❌ 清理用户积分测试数据失败: %v\n", err)
 	} else {
 		fmt.Println("✅ 清理用户积分测试数据成功")
 	}
 
-	_, err = novelCollection.DeleteOne(context.Background(), bson.M{"title": "测试小说"})
+	_, err = novelCollection.DeleteOne(context.Background(), bson.M{"author": "测试作者"})
 	if err != nil {
 		fmt.Printf("❌ 清理小说测试数据失败: %v\n", err)
 	} else {
 		fmt.Println("✅ 清理小说测试数据成功")
 	}
 
-	// 14. 断开连接（可选，程序结束时会自动断开）
-	fmt.Println("\n14. 测试断开连接")
-	err = mongoInstance.Disconnect()
+	_, err = creditHistoryCollection.DeleteOne(context.Background(), bson.M{"userId": "test_user_001"})
 	if err != nil {
-		fmt.Printf("❌ 断开连接失败: %v\n", err)
+		fmt.Printf("❌ 清理积分历史测试数据失败: %v\n", err)
 	} else {
-		fmt.Println("✅ 断开连接成功")
+		fmt.Println("✅ 清理积分历史测试数据成功")
 	}
 
-	fmt.Println("\n=== MongoDB单例测试完成 ===")
-}
-
-// 测试单例在不同函数中的使用
-func testSingletonInDifferentFunction() {
-	mongoInstance := database.GetMongoInstance()
-	fmt.Printf("在另一个函数中获取单例，地址: %p\n", mongoInstance)
-
-	if mongoInstance.IsConnected() {
-		fmt.Println("✅ 在另一个函数中，MongoDB连接仍然可用")
-
-		// 测试获取集合
-		collection := mongoInstance.GetCollection("test_collection")
-		fmt.Printf("✅ 成功获取测试集合: %s\n", collection.Name())
-	} else {
-		fmt.Println("❌ 在另一个函数中，MongoDB连接不可用")
-	}
-}
-
-// 演示如何在实际服务中使用
-func demonstrateRealUsage() {
-	fmt.Println("\n=== 实际使用演示 ===")
-
-	// 在服务中获取MongoDB实例
-	mongoInstance := database.GetMongoInstance()
-
-	// 获取集合
-	userCreditCollection := mongoInstance.GetCollection("user_credits")
-
-	// 示例：创建或更新用户积分
-	userID := "user_123"
-
-	// 检查用户是否存在
-	var userCredit database.UserCredit
-	err := userCreditCollection.FindOne(context.Background(), bson.M{"user_id": userID}).Decode(&userCredit)
-
-	if err != nil {
-		// 用户不存在，创建新用户
-		newUserCredit := database.UserCredit{
-			UserID:        userID,
-			Credit:        50,
-			TotalUsed:     0,
-			TotalRecharge: 50,
-			IsActive:      true,
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
-		}
-
-		_, err = userCreditCollection.InsertOne(context.Background(), newUserCredit)
-		if err != nil {
-			fmt.Printf("创建用户失败: %v\n", err)
-			return
-		}
-		fmt.Printf("✅ 创建新用户 %s，初始积分: %d\n", userID, newUserCredit.Credit)
-	} else {
-		// 用户存在，直接使用，无需类型转换！
-		fmt.Printf("✅ 用户 %s 存在，当前积分: %d (直接使用int，无需转换！)\n",
-			userID, userCredit.Credit)
-	}
+	fmt.Println("\n=== 测试完成 ===")
+	fmt.Println("🎉 MongoDB 模型已与链码结构保持一致！")
+	fmt.Println("📋 包含的结构体:")
+	fmt.Println("   - Novel (小说资源)")
+	fmt.Println("   - UserCredit (用户积分)")
+	fmt.Println("   - CreditHistory (积分历史)")
 }
