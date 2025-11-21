@@ -227,14 +227,32 @@ func (ms *MongoService) CreateIndexes() error {
 	log.Println("🔍 开始为数据库创建索引...")
 
 	// 第一步：为小说集合创建故事大纲索引
-	// 为什么要用storyOutline？因为用户经常根据故事内容来搜索小说
+	// 使用 storyOutline 作为唯一索引，确保每个故事都是独一无二的
 	log.Println("📚 为 novels 集合创建 storyOutline 索引...")
 	novelsCollection := ms.db.GetCollection("novels")
 
-	// 创建索引：Keys告诉MongoDB要根据哪个字段排序
+	// 首先删除可能存在的错误索引
+	indexes, err := novelsCollection.Indexes().List(ctx)
+	if err == nil {
+		for indexes.Next(ctx) {
+			var index bson.M
+			indexes.Decode(&index)
+			if name, ok := index["name"]; ok && name == "novels_userId_novelId_key" {
+				log.Println("🗑️ 删除错误的 userId+novelId 索引...")
+				_, dropErr := novelsCollection.Indexes().DropOne(ctx, "novels_userId_novelId_key")
+				if dropErr != nil {
+					log.Printf("⚠️ 删除错误索引失败: %v", dropErr)
+				} else {
+					log.Println("✅ 成功删除错误的 userId+novelId 索引")
+				}
+			}
+		}
+	}
+
+	// 创建正确的 storyOutline 索引
 	// {"storyOutline": 1} 表示按故事大纲升序排列
-	// SetUnique(true) 表示每个故事大纲必须是唯一的，不允许重复
-	_, err := novelsCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+	// SetUnique(true) 表示每个故事大纲必须是唯一的
+	_, err = novelsCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.M{"storyOutline": 1},
 		Options: options.Index().SetUnique(true),
 	})
