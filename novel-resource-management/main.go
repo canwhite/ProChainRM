@@ -12,6 +12,7 @@ import(
 	"github.com/hyperledger/fabric-gateway/pkg/hash"
 	"novel-resource-management/network"
 	"novel-resource-management/api"
+	"novel-resource-management/service"
 )
 
 
@@ -69,9 +70,21 @@ func main(){
 	}
 	defer gateWay.Close()
 
+	// 创建事件服务并启动事件监听
+	eventService := service.NewEventService(gateWay)
+	ctx := context.Background()
+
+	// 启动事件监听（在后台goroutine中运行）
+	go func() {
+		log.Println("🎧 启动事件监听器...")
+		if err := eventService.StartEventListening(ctx); err != nil {
+			log.Printf("❌ 事件监听器启动失败: %v", err)
+		}
+	}()
+
 	server := api.NewServer(gateWay)
 
-	//handle gracefully shutdown 
+	//handle gracefully shutdown
 	sigChan := make(chan os.Signal,1)
 	// INSERT_YOUR_CODE
 	/*
