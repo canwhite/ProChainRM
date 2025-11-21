@@ -41,6 +41,7 @@ func main() {
 
 	// 5. 测试插入数据
 	fmt.Println("\n5. 测试插入用户积分数据")
+	//短指针声明
 	testUserCredit := database.UserCredit{
 		UserID:        "test_user_001",
 		Credit:        100,
@@ -129,8 +130,9 @@ func main() {
 	// 9. 测试更新数据（模拟消费token）
 	fmt.Println("\n9. 测试更新数据（模拟消费token）")
 	if foundUserCredit.Credit > 0 {
-		// 使用BSON直接更新，无需类型转换！
+		// filter
 		filter := bson.M{"user_id": "test_user_001"}
+		// update
 		update := bson.M{
 			"$inc": bson.M{
 				"credit":     -1,        // 直接使用int
