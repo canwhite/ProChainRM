@@ -45,7 +45,7 @@ type MongoDBConfig struct {
       return &MongoDBConfig{
           // 格式: mongodb://用户名:密码@主机:端口/?authSource=认证数据库，注意这样不安全，最好还是用.env
           URI:            "mongodb://myuser:mypassword@localhost:27017/?authSource=admin",
-          Database:       "novel_rm",
+          Database:       "novel",
           Timeout:        10 * time.Second,
           MaxPoolSize:    10,
           MinPoolSize:    2,
@@ -56,7 +56,7 @@ type MongoDBConfig struct {
 
 **配置参数说明：**
 - `URI`: MongoDB 服务器地址，默认本地 27017 端口
-- `Database`: 数据库名称，这里是 `novel_rm`
+- `Database`: 数据库名称，这里是 `novel`
 - `Timeout`: 连接超时时间，10秒
 - `MaxPoolSize`: 最大连接数，防止连接过多
 - `MinPoolSize`: 最小连接数，保证基本性能
@@ -380,13 +380,13 @@ defer func() {
 ```bash
 # Linux/Mac
 export MONGODB_URI="mongodb://localhost:27017"
-export MONGODB_DATABASE="novel_rm"
+export MONGODB_DATABASE="novel"
 export MONGODB_TIMEOUT="30s"
 export MONGODB_MAX_POOL_SIZE="20"
 
 # Windows
 set MONGODB_URI=mongodb://localhost:27017
-set MONGODB_DATABASE=novel_rm
+set MONGODB_DATABASE=novel
 ```
 
 ## 💡 实际应用场景

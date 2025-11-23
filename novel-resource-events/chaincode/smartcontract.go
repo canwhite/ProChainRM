@@ -3,6 +3,7 @@ package chaincode
 import (
 	"encoding/json"
 	"fmt"
+	"log" //主要
 	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/v2/contractapi"
@@ -475,6 +476,105 @@ func (s *SmartContract) UserCreditExists(ctx contractapi.TransactionContextInter
 		return false, err
 	}
 	return userCreditJSON != nil, nil
+}
+
+// MongoImportData 从 MongoDB 导入的数据结构
+type MongoImportData struct {
+	Novels      []Novel      `json:"novels"`
+	UserCredits []UserCredit `json:"userCredits"`
+}
+
+// InitFromMongoDB 从 MongoDB 数据初始化账本
+// 参数：JSON字符串，包含从 MongoDB 读取的所有数据
+func (s *SmartContract) InitFromMongoDB(ctx contractapi.TransactionContextInterface, jsonData string) (string, error) {
+
+	// 解析 JSON 数据
+	var importData MongoImportData
+	// de stringify 
+	if err := json.Unmarshal([]byte(jsonData), &importData); err != nil {
+		return "", fmt.Errorf("解析 MongoDB 数据失败: %v", err)
+	}
+
+	// 导入 novels 数据
+	novelSuccessCount := 0
+	novelErrorCount := 0
+	for _, novel := range importData.Novels {
+		// 检查小说是否已存在，如果存在则跳过（MongoDB 数据优先）
+		exists, err := s.NovelExists(ctx, novel.ID)
+		if err != nil {
+			log.Printf("⚠️ 检查小说 %s 存在性失败: %v", novel.ID, err)
+			novelErrorCount++
+			continue
+		}
+
+		if exists {
+			log.Printf("⏭️ 小说 %s 已存在，跳过（MongoDB 数据优先）", novel.ID)
+			continue
+		}
+
+		// 创建小说
+		novelJSON, err := json.Marshal(novel)
+		if err != nil {
+			log.Printf("⚠️ 序列化小说 %s 失败: %v", novel.ID, err)
+			novelErrorCount++
+			continue
+		}
+
+		if err := ctx.GetStub().PutState(novel.ID, novelJSON); err != nil {
+			log.Printf("⚠️ 保存小说 %s 失败: %v", novel.ID, err)
+			novelErrorCount++
+			continue
+		}
+
+		log.Printf("✅ 成功导入小说: %s - %s", novel.ID, novel.Author)
+		novelSuccessCount++
+	}
+
+	// 导入 userCredits 数据
+	creditSuccessCount := 0
+	creditErrorCount := 0
+	for _, userCredit := range importData.UserCredits {
+		// 检查用户积分是否已存在，如果存在则跳过（MongoDB 数据优先）
+		exists, err := s.UserCreditExists(ctx, userCredit.UserID)
+		if err != nil {
+			log.Printf("⚠️ 检查用户积分 %s 存在性失败: %v", userCredit.UserID, err)
+			creditErrorCount++
+			continue
+		}
+
+		if exists {
+			log.Printf("⏭️ 用户积分 %s 已存在，跳过（MongoDB 数据优先）", userCredit.UserID)
+			continue
+		}
+
+		// 创建用户积分
+		userCreditJSON, err := json.Marshal(userCredit)
+		if err != nil {
+			log.Printf("⚠️ 序列化用户积分 %s 失败: %v", userCredit.UserID, err)
+			creditErrorCount++
+			continue
+		}
+
+		if err := ctx.GetStub().PutState(userCredit.UserID, userCreditJSON); err != nil {
+			log.Printf("⚠️ 保存用户积分 %s 失败: %v", userCredit.UserID, err)
+			creditErrorCount++
+			continue
+		}
+
+		log.Printf("✅ 成功导入用户积分: %s - credit:%d", userCredit.UserID, userCredit.Credit)
+		creditSuccessCount++
+	}
+
+	result := fmt.Sprintf("🎉 MongoDB 数据导入完成!\n"+
+		"📚 小说数据: 成功 %d 个, 失败 %d 个\n"+
+		"💰 用户积分数据: 成功 %d 个, 失败 %d 个\n"+
+		"📊 总计: 成功 %d 个, 失败 %d 个",
+		novelSuccessCount, novelErrorCount,
+		creditSuccessCount, creditErrorCount,
+		novelSuccessCount+creditSuccessCount, novelErrorCount+creditErrorCount)
+
+	log.Println(result)
+	return result, nil
 }
 
 //TODO. implements some methods of token

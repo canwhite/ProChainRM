@@ -356,16 +356,20 @@ func (s *Server)getUserCredit(c *gin.Context){
 		})
 		return
 	}
-	credit,err :=  s.creditService.ReadUserCredit(id)
+
+	credit, err := s.creditService.ReadUserCredit(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
+			"userId": id,
 		})
 		return
 	}
+
 	if credit == nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "未找到该用户积分信息",
+			"userId": id,
 		})
 		return
 	}

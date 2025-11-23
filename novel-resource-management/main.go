@@ -74,11 +74,44 @@ func main(){
 	eventService := service.NewEventService(gateWay)
 	ctx := context.Background()
 
-	// 启动事件监听（在后台goroutine中运行）
+	// 启动事件监听（在后台goroutine中运行），如果不启动服务是没有意义的
 	go func() {
 		log.Println("🎧 启动事件监听器...")
 		if err := eventService.StartEventListening(ctx); err != nil {
 			log.Printf("❌ 事件监听器启动失败: %v", err)
+		}
+	}()
+
+	// 启动时自动初始化链码（从MongoDB同步数据）
+	go func() {
+		log.Println("🔄 开始从MongoDB初始化链码...")
+		chaincodeService, err := service.NewChaincodeMigrationService(gateWay)
+		if err != nil {
+			log.Printf("❌ 创建链码迁移服务失败: %v", err)
+			return
+		}
+
+		// 等待3秒，确保MongoDB连接稳定
+		time.Sleep(3 * time.Second)
+
+		result, err := chaincodeService.InitChaincodeFromMongoDB(ctx)
+		if err != nil {
+			log.Printf("❌ 链码初始化失败: %v", err)
+		} else {
+			log.Printf("✅ 链码初始化成功: %s", result)
+		}
+
+		// 验证数据一致性
+		log.Println("🔍 验证链上链下数据一致性...")
+		consistencyReport, err := chaincodeService.ValidateDataConsistency(ctx)
+		if err != nil {
+			log.Printf("❌ 数据一致性验证失败: %v", err)
+		} else {
+			if consistencyReport["consistent"].(bool) {
+				log.Println("✅ 链上链下数据一致性验证通过")
+			} else {
+				log.Printf("⚠️ 数据一致性验证发现问题: %+v", consistencyReport["discrepancies"])
+			}
 		}
 	}()
 

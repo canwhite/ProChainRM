@@ -29,7 +29,7 @@ type MongoDBConfig struct {
 func DefaultMongoDBConfig() *MongoDBConfig {
 	return &MongoDBConfig{
 		URI:            "mongodb://localhost:27017",
-		Database:       "novel_rm",
+		Database:       "novel",
 		Timeout:        10 * time.Second,
 		MaxPoolSize:    10,
 		MinPoolSize:    2,

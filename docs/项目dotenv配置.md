@@ -13,7 +13,7 @@ go get github.com/joho/godotenv
 ```env
 # MongoDB 配置
 MONGODB_URI=mongodb://myuser:mypassword@localhost:27017
-MONGODB_DATABASE=novel_rm
+MONGODB_DATABASE=novel
 
 # 数据库连接池配置
 MONGODB_TIMEOUT=30s
@@ -126,7 +126,7 @@ func main() {
 ```env
 # MongoDB 配置示例
 MONGODB_URI=mongodb://username:password@localhost:27017
-MONGODB_DATABASE=novel_rm
+MONGODB_DATABASE=novel
 
 # 连接池配置
 MONGODB_TIMEOUT=30s

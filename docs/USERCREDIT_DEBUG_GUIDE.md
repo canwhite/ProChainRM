@@ -17,7 +17,7 @@ go run main.go
 **期望看到的输出**：
 ```
 🎧 Starting event listener...
-✅ MongoDB自动连接成功! 数据库: novel_rm
+✅ MongoDB自动连接成功! 数据库: novel
 🔍 开始为数据库创建索引...
 📚 为 novels 集合创建 storyOutline 索引...
 ✅ novels 集合的 storyOutline 索引创建成功
@@ -129,7 +129,7 @@ case "UpdateUserCredit":  // 确认这个名称与链码中的事件名称一致
 
 ```javascript
 // 连接到 MongoDB
-mongo novel_rm
+mongo novel
 
 // 查看当前 user_credits 集合
 db.user_credits.find().pretty()

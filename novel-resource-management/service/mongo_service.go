@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,12 +26,24 @@ func NewMongoService() *MongoService {
 
 // Novel相关的MongoDB操作
 
+// generateID 生成唯一ID
+func generateID() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano())
+}
+
 // CreateNovelInMongo 在MongoDB中创建Novel记录
 func (ms *MongoService) CreateNovelInMongo(novel map[string]interface{}) error {
 	collection := ms.db.GetCollection("novels")
 
+	// 获取或生成ID
+	id := getString(novel, "id")
+	if id == "" {
+		id = generateID() // 生成唯一ID
+	}
+
 	// 将map转换为Novel结构
 	novelData := &database.Novel{
+		ID:           id, // 使用传入的ID或生成的ID
 		Author:       getString(novel, "author"),
 		StoryOutline: getString(novel, "storyOutline"),
 		Subsections:  getString(novel, "subsections"),
@@ -102,8 +115,15 @@ func (ms *MongoService) UpdateNovelInMongo(novel map[string]interface{}) error {
 func (ms *MongoService) CreateUserCreditInMongo(userCredit map[string]interface{}) error {
 	collection := ms.db.GetCollection("user_credits")
 
+	// 获取或生成ID
+	id := getString(userCredit, "id")
+	if id == "" {
+		id = generateID() // 生成唯一ID
+	}
+
 	// 将map转换为UserCredit结构
 	userCreditData := &database.UserCredit{
+		ID:            id, // 使用传入的ID或生成的ID
 		UserID:        getString(userCredit, "userId"),
 		Credit:        getInt(userCredit, "credit"),
 		TotalUsed:     getInt(userCredit, "totalUsed"),
@@ -166,8 +186,15 @@ func (ms *MongoService) UpdateUserCreditInMongo(userCredit map[string]interface{
 func (ms *MongoService) CreateCreditHistoryInMongo(creditHistory map[string]interface{}) error {
 	collection := ms.db.GetCollection("credit_histories")
 
+	// 获取或生成ID
+	id := getString(creditHistory, "id")
+	if id == "" {
+		id = generateID() // 生成唯一ID
+	}
+
 	// 将map转换为CreditHistory结构
 	creditHistoryData := &database.CreditHistory{
+		ID:          id, // 使用传入的ID或生成的ID
 		UserID:      getString(creditHistory, "userId"),
 		Amount:      getInt(creditHistory, "amount"),
 		Type:        getString(creditHistory, "type"),
