@@ -2,6 +2,7 @@
 
 本文档专门解释Docker新手最困惑的问题：Dockerfile和docker-compose.yml的关系。
 
+
 ## 🎯 快速理解
 
 ### 一句话总结
@@ -346,6 +347,17 @@ Dockerfile + docker-compose.yml = 完整的容器化应用
 docker-compose up -d
 ```
 
+### PS：port的定义规范，有点类似于大的托小的
+  1. 人类思维的直觉顺序
+
+  ports: "宿主机端口:容器端口"     # 我从外部访问什么 → 内部服务是什么
+  volumes: "宿主机路径:容器路径"    # 我的文件放哪里 → 容器里看到哪里
+
+  如果写成这样：
+  ports:
+    - "9999:8080"
+  那么你就需要访问 http://localhost:9999 才能用到你的应用。
 ---
 
 **新手入门建议**：先用`docker-compose up -d`，遇到问题时再深入了解Dockerfile的具体内容！
+

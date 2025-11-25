@@ -17,13 +17,21 @@ services:
   #   network_mode: host
   #   restart: "no"
 
-  # Novel API 服务
+  # Novel API 服务，这里的novel-api是服务名称，ok
   novel-api:
     build:
       context: .
       dockerfile: Dockerfile
+    # 自动的image name会是projectName_containerName
     container_name: novel-api
+    # | 策略             | 行为               |
+    # |----------------|------------------|
+    # | no             | 不自动重启（默认）        |
+    # | on-failure     | 只有在容器退出码非0时才重启   |
+    # | always         | 无论什么情况都重启，包括手动停止 |
+    # | unless-stopped | 除非手动停止，否则总是重启    |
     restart: unless-stopped
+    # 容器内部，全局环境变量
     environment:
       - SERVER_PORT=8080
       - MONGODB_URI=mongodb://admin:715705%40Qc123@host.docker.internal:27017/novel?replicaSet=rs0&authSource=admin
@@ -34,6 +42,7 @@ services:
       - FABRIC_CERT_PATH=/app/test-network/organizations/peerOrganizations/org1.example.com
       - FABRIC_PEER_HOST=peer0.org1.example.com
       - FABRIC_PEER_PORT=7051
+    #宿主机对外的是8080:docker端口，可以理解为钥匙：锁
     ports:
       - "8080:8080"
     volumes:
