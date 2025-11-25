@@ -37,7 +37,7 @@ net:
 **步骤2: 重新配置副本集**
 ```javascript
 // 连接到MongoDB
-mongo mongodb://admin:715705%40Qc123@127.0.0.1:27017/novel?authSource=admin
+mongo mongodb://admin:passward@127.0.0.1:27017/novel?authSource=admin
 
 // 重新配置副本集成员地址
 rs.reconfig({
@@ -55,7 +55,7 @@ rs.status()
 ```yaml
 # docker-compose.yml
 environment:
-  - MONGODB_URI=mongodb://admin:715705%40Qc123@172.16.181.101:27017/novel?replicaSet=rs0&authSource=admin
+  - MONGODB_URI=mongodb://admin:passward@172.16.181.101:27017/novel?replicaSet=rs0&authSource=admin
 ```
 
 ### 问题2: Docker网络隔离导致Fabric连接失败
@@ -153,7 +153,7 @@ services:
     restart: unless-stopped
     environment:
       - SERVER_PORT=8080
-      - MONGODB_URI=mongodb://admin:715705%40Qc123@172.16.181.101:27017/novel?replicaSet=rs0&authSource=admin
+      - MONGODB_URI=mongodb://admin:passward@172.16.181.101:27017/novel?replicaSet=rs0&authSource=admin
       - MONGODB_DATABASE=novel
       - MONGODB_TIMEOUT=30s
       - MONGODB_MAX_POOL_SIZE=10

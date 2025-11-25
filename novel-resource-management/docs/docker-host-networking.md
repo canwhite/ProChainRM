@@ -31,7 +31,7 @@ extra_hosts:
 services:
   novel-api:
     environment:
-      - MONGODB_URI=mongodb://admin:715705%40Qc123@host.docker.internal:27017/novel?replicaSet=rs0&authSource=admin
+      - MONGODB_URI=mongodb://admin:passward@host.docker.internal:27017/novel?replicaSet=rs0&authSource=admin
     extra_hosts:
       - "host.docker.internal:host-gateway"
 ```

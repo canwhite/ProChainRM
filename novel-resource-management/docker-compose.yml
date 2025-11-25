@@ -11,7 +11,7 @@ services:
   #     sh -c "
   #       echo '🔧 开始自动配置宿主机MongoDB副本集...' &&
   #       # 在宿主机上执行MongoDB配置脚本
-  #       MONGO_ADMIN_USER='admin' MONGO_ADMIN_PASS='715705@Qc123' MONGO_PORT='27017' /scripts/config-host-mongodb.sh &&
+  #       MONGO_ADMIN_USER='admin' MONGO_ADMIN_PASS='xxx' MONGO_PORT='27017' /scripts/config-host-mongodb.sh &&
   #       echo '✅ MongoDB副本集配置完成'
   #     "
   #   network_mode: host
@@ -31,10 +31,10 @@ services:
     # | always         | 无论什么情况都重启，包括手动停止 |
     # | unless-stopped | 除非手动停止，否则总是重启    |
     restart: unless-stopped
-    # 容器内部，全局环境变量
+    # 容器内部，全局环境变量 ${环境变量:-default}
     environment:
       - SERVER_PORT=8080
-      - MONGODB_URI=mongodb://admin:715705%40Qc123@host.docker.internal:27017/novel?replicaSet=rs0&authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASS:-password}@host.docker.internal:27017/novel?replicaSet=rs0&authSource=admin
       - MONGODB_DATABASE=novel
       - MONGODB_TIMEOUT=30s
       - MONGODB_MAX_POOL_SIZE=10

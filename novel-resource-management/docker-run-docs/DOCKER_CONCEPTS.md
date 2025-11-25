@@ -173,7 +173,7 @@ services:
   novel-api:                  # 使用上面的Dockerfile构建的镜像
     build: .                  # 🎯 这里调用了Dockerfile！
     environment:
-      - MONGODB_URI=mongodb://admin:715705%40Qc123@host.docker.internal:27017
+      - MONGODB_URI=mongodb://admin:passward@host.docker.internal:27017
     ports:
       - "8080:8080"
     volumes:

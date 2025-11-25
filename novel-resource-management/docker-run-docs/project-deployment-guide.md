@@ -70,7 +70,7 @@ services:
     restart: unless-stopped
     environment:
       - SERVER_PORT=8080
-      - MONGODB_URI=mongodb://admin:715705%40Qc123@host.docker.internal:27017/novel?replicaSet=rs0&authSource=admin
+      - MONGODB_URI=mongodb://admin:passward@host.docker.internal:27017/novel?replicaSet=rs0&authSource=admin
       - FABRIC_PEER_HOST=peer0.org1.example.com
       - FABRIC_PEER_PORT=7051
     ports:
@@ -105,7 +105,7 @@ net:
 **步骤2: 重新配置副本集**
 ```javascript
 // 连接到MongoDB
-mongo mongodb://admin:715705@Qc123@127.0.0.1:27017/novel?authSource=admin
+mongo mongodb://admin:passward@127.0.0.1:27017/novel?authSource=admin
 
 // 重新配置副本集成员地址
 rs.reconfig({
@@ -122,7 +122,7 @@ rs.status()
 **步骤3: 更新环境变量**
 ```yaml
 environment:
-  - MONGODB_URI=mongodb://admin:715705%40Qc123@172.16.181.101:27017/novel?replicaSet=rs0&authSource=admin
+  - MONGODB_URI=mongodb://admin:passward@172.16.181.101:27017/novel?replicaSet=rs0&authSource=admin
 ```
 
 ## 第三阶段：Fabric网络连接问题解决
@@ -270,7 +270,7 @@ func runDockerDeploy() error {
 
 **MongoDB连接测试**
 ```bash
-mongosh mongodb://admin:715705@Qc123@127.0.0.1:27017/admin?authSource=admin --eval "db.adminCommand('ping')"
+mongosh mongodb://admin:passward@127.0.0.1:27017/admin?authSource=admin --eval "db.adminCommand('ping')"
 ```
 
 **API健康检查**
@@ -420,7 +420,7 @@ docker-compose logs novel-api
 brew services list | grep mongodb
 
 # 检查副本集状态
-mongosh mongodb://admin:715705@Qc123@127.0.0.1:27017/admin?authSource=admin --eval "rs.status()"
+mongosh mongodb://admin:passward@127.0.0.1:27017/admin?authSource=admin --eval "rs.status()"
 ```
 
 **Fabric网络连接问题**
