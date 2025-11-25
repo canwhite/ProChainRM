@@ -11,8 +11,14 @@ import (
 )
 
 func NewGrpcConnection() (*grpc.ClientConn, error) {
+	// 获取Fabric证书路径
+	certPath := os.Getenv("FABRIC_CERT_PATH")
+	if certPath == "" {
+		certPath = "../test-network/organizations/peerOrganizations/org1.example.com" // 默认路径
+	}
+
 	//pem是最原始的证书，没有经过解析的证书，由start和end组成
-	tlsCertificatePEM, err := os.ReadFile("../test-network/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem")
+	tlsCertificatePEM, err := os.ReadFile(fmt.Sprintf("%s/tlsca/tlsca.org1.example.com-cert.pem", certPath))
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to read TLS certificate: %w", err)
@@ -37,8 +43,14 @@ func NewGrpcConnection() (*grpc.ClientConn, error) {
 
 // NewIdentity用于生成Fabric网络所需的X.509身份
 func NewIdentity() *identity.X509Identity {
+	// 获取Fabric证书路径
+	certPath := os.Getenv("FABRIC_CERT_PATH")
+	if certPath == "" {
+		certPath = "../test-network/organizations/peerOrganizations/org1.example.com" // 默认路径
+	}
+
 	//先读pem
-	certificatePEM, err := os.ReadFile("../test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem")
+	certificatePEM, err := os.ReadFile(fmt.Sprintf("%s/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem", certPath))
 	if err != nil {
 
 		panic(fmt.Errorf("failed to read certificate: %w", err))
@@ -59,8 +71,14 @@ func NewIdentity() *identity.X509Identity {
 }
 
 func NewSign() identity.Sign {
+	// 获取Fabric证书路径
+	certPath := os.Getenv("FABRIC_CERT_PATH")
+	if certPath == "" {
+		certPath = "../test-network/organizations/peerOrganizations/org1.example.com" // 默认路径
+	}
+
 	//还是先拿pem
-	privateKeyPEM, err := os.ReadFile("../test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore/priv_sk")
+	privateKeyPEM, err := os.ReadFile(fmt.Sprintf("%s/users/User1@org1.example.com/msp/keystore/priv_sk", certPath))
 	if err != nil {
 		panic(fmt.Errorf("failed to read private key: %w", err))
 	}

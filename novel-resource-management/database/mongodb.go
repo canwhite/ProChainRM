@@ -73,7 +73,10 @@ func loadMongoConfig() *MongoDBConfig {
 
 	// 从环境变量读取配置
 	if uri := os.Getenv("MONGODB_URI"); uri != "" {
+		log.Printf("从环境变量读取到MONGODB_URI: %s", uri)
 		config.URI = uri
+	} else {
+		log.Printf("环境变量MONGODB_URI为空，使用默认值: %s", config.URI)
 	}
 
 	if database := os.Getenv("MONGODB_DATABASE"); database != "" {
@@ -159,6 +162,9 @@ func (m *MongoDBInstance) Connect() error {
 	// 连接到MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), m.config.Timeout)
 	defer cancel()
+
+	// 对于单节点连接，禁用副本集发现
+	// clientOptions.SetDirect(true)
 
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {

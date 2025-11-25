@@ -1,0 +1,56 @@
+# Git
+.git
+.gitignore
+README.md
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+temp/
+logs/
+
+# Test files
+*_test.go
+test_*.go
+test*.go
+
+# Build artifacts
+novel-api
+server
+test_server
+*.exe
+
+# Dependency directories (already handled by go mod)
+vendor/
+
+# Environment files (will be copied separately)
+.env.local
+.env.production
+
+# Documentation
+docs/
+*.md
+
+# Scripts
+scripts/
