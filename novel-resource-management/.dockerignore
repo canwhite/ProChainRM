@@ -34,6 +34,7 @@ logs/
 *_test.go
 test_*.go
 test*.go
+debug*.go
 
 # Build artifacts
 novel-api

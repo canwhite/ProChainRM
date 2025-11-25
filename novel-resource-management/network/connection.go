@@ -3,6 +3,7 @@ package network
 import (
 	"crypto/x509" // X.509证书解析，用于TLS连接验证
 	"fmt"         // 格式化输出，用于错误处理
+	"log"         // 日志输出
 	"os"          // 操作系统接口，用于读取证书文件
 
 	"github.com/hyperledger/fabric-gateway/pkg/identity" // Fabric网关身份验证包
@@ -15,6 +16,29 @@ func NewGrpcConnection() (*grpc.ClientConn, error) {
 	certPath := os.Getenv("FABRIC_CERT_PATH")
 	if certPath == "" {
 		certPath = "../test-network/organizations/peerOrganizations/org1.example.com" // 默认路径
+	}
+
+	// 获取Fabric连接地址
+	peerHost := os.Getenv("FABRIC_PEER_HOST")
+	peerPort := os.Getenv("FABRIC_PEER_PORT")
+
+	// 智能判断运行环境
+	if peerHost == "" {
+		// 检测是否在Docker容器中运行（通过检查/proc/1/cgroup或其他方式）
+		if _, err := os.Stat("/.dockerenv"); err == nil {
+			// 在Docker容器中，使用host.docker.internal
+			peerHost = "host.docker.internal"
+			log.Printf("检测到Docker环境，使用 host.docker.internal")
+		} else {
+			// 本地开发环境，检测是否MacOS或Linux
+			// 在MacOS上，localhost可以工作
+			peerHost = "localhost"
+			log.Printf("检测到本地环境，使用 localhost")
+		}
+	}
+
+	if peerPort == "" {
+		peerPort = "7051" // 默认端口
 	}
 
 	//pem是最原始的证书，没有经过解析的证书，由start和end组成
@@ -37,7 +61,9 @@ func NewGrpcConnection() (*grpc.ClientConn, error) {
 	transportCredentials := credentials.NewClientTLSFromCert(certPool, "peer0.org1.example.com")
 
 	//注意返回的是grpc的client对象，供gateway使用
-	return grpc.NewClient("dns:///localhost:7051", grpc.WithTransportCredentials(transportCredentials))
+	peerAddress := fmt.Sprintf("%s:%s", peerHost, peerPort)
+	log.Printf("连接Fabric网络: %s", peerAddress)
+	return grpc.NewClient(peerAddress, grpc.WithTransportCredentials(transportCredentials))
 
 }
 
