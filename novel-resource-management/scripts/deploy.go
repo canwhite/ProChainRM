@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/exec"
+	"os/exec" //这个用来执行命令行，直接可以exec
 	"strings"
 	"time"
 
@@ -145,6 +145,7 @@ func configureMongoDBReplicaSet(hostIP string) error {
 	// 使用mongosh命令检查连接（实际连接时使用真实密码）
 	// 处理密码编码：如果环境变量中已经是编码过的，先解码再重新编码
 	var actualPassword string
+	// strings可以测包含问题
 	if strings.Contains(mongoPass, "%40") {
 		// 如果密码包含%40，先解码得到原始密码
 		actualPassword = strings.ReplaceAll(mongoPass, "%40", "@")
@@ -155,6 +156,7 @@ func configureMongoDBReplicaSet(hostIP string) error {
 
 	// 然后进行正确的URL编码
 	encodedPassword := strings.ReplaceAll(actualPassword, "@", "%40")
+	// 类似于OS的stringsFormat
 	realMongoURI := fmt.Sprintf("mongodb://%s:%s@127.0.0.1:%s/%s?authSource=admin",
 		mongoUser, encodedPassword, MongoPort, MongoDatabase)
 	checkCmd := exec.CommandContext(ctx, "mongosh", realMongoURI, "--eval", "db.adminCommand('ping')")
@@ -175,8 +177,9 @@ func configureMongoDBReplicaSet(hostIP string) error {
 	if status == "1" {
 		fmt.Println("✅ 副本集已配置，检查IP配置...")
 
-		// 获取当前配置
+		// 获取当前配置，这里Command是名词，指令，合到一起是指令上下文的意思
 		getConfigCmd := exec.CommandContext(ctx, "mongosh", realMongoURI, "--eval", "rs.conf().members[0].host")
+		// 执行并合并结果
 		output, err := getConfigCmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("获取当前副本集配置失败: %v", err)
@@ -231,6 +234,7 @@ func runDockerDeploy() error {
 	fmt.Println("🐳 开始Docker部署...")
 
 	// 检查Docker是否运行
+	// 如果遇到直接执行的命令，这里就是简单组装好了，直接run了，没有output
 	dockerCmd := exec.Command("docker", "--version")
 	if err := dockerCmd.Run(); err != nil {
 		return fmt.Errorf("Docker未运行或未安装: %v", err)
