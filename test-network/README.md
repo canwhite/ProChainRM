@@ -11,7 +11,7 @@ PS:如果 createChannel 卡住，注意查看下 9443 端口是不是被占了�
 # 1. Set up environment variables
 
 1. 环境变量:
-   source set-env.sh
+source set-env.sh
 
 执行的原因是：
 

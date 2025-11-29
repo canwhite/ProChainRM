@@ -1,0 +1,96 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+)
+
+
+func main(){
+
+	//停止任务
+	fmt.Println("Running ./network.sh down to clean up previous network...")
+	// 创建一个shell命令来执行 "./network.sh down"
+	// "sh" - 启动shell解释器来执行命令  "-c" - 告诉shell执行接下来的字符串命令
+	cmd := exec.Command("sh", "-c", "cd test-network && ./network.sh down")
+	// 输出重定向，这就像把子程序的"嘴巴"连接到你的屏幕
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Printf("Warning: network.sh down failed: %v", err)
+	} else {
+		fmt.Println("Network shutdown completed successfully")
+	}
+
+	//启动
+	upCmd := exec.Command("sh", "-c", "cd test-network && ./network.sh up")
+	// 输出重定向，这就像把子程序的"嘴巴"连接到你的屏幕
+	upCmd.Stdout = os.Stdout  // 将启动过程的输出显示到屏幕
+	upCmd.Stderr = os.Stderr  // 将错误信息显示到屏幕
+
+	if err := upCmd.Run(); err != nil {
+		log.Printf("Warning: network.sh up failed: %v", err)
+	} else {
+		fmt.Println("Network startup completed successfully")
+	}
+
+	//创建通道
+	channelCmd := exec.Command("sh","-c","cd test-network && ./network.sh createChannel")
+	channelCmd.Stdout = os.Stdout
+	channelCmd.Stderr = os.Stderr
+	
+	if err := channelCmd.Run(); err != nil{
+		log.Printf("Warning: create channel failed: %v", err)
+	}else{
+		fmt.Println("create channel completed successfully")
+	}
+
+	// 创建shell命令来部署chaincode
+	// "sh" - 启动shell解释器来执行命令
+	// "-c" - 告诉shell执行接下来的字符串命令
+	// 部署参数说明:
+	// -ccn novel-basic: chaincode名称为novel-basic
+	// -ccp ../novel-resource-events: chaincode源码路径
+	// -ccl go: 使用Go语言编写的chaincode
+	// -cci InitLedger: 初始化函数名
+	// -ccep "OR('Org1MSP.member','Org2MSP.member')": 策略，允许Org1和Org2的成员调用
+	deployCmd := exec.Command("sh", "-c", "cd test-network && source set-env.sh && ./network.sh deployCC -ccn novel-basic -ccp ../novel-resource-events -ccl go -ccv 1.0 -cci InitLedger -ccep 'OR(\"Org1MSP.member\",\"Org2MSP.member\")'")
+	// 输出重定向，这就像把子程序的"嘴巴"连接到你的屏幕
+	deployCmd.Stdout = os.Stdout  // 将部署过程的输出显示到屏幕
+	deployCmd.Stderr = os.Stderr  // 将错误信息显示到屏幕
+
+	if err := deployCmd.Run(); err != nil {
+		log.Printf("Warning: chaincode deployment failed: %v", err)
+	} else {
+		fmt.Println("Chaincode deployment completed successfully")
+	}
+
+
+	fmt.Println("Querying chaincode to get all novels...")
+
+	// 创建shell命令来查询chaincode
+	// "sh" - 启动shell解释器来执行命令
+	// "-c" - 告诉shell执行接下来的字符串命令
+	// 查询参数说明:
+	// -C mychannel: 指定通道名称为mychannel
+	// -n novel-basic: 指定chaincode名称为novel-basic
+	// -c '{\"function\":\"GetAllNovels\",\"Args\":[]}': 调用GetAllNovels函数，传入空参数
+	// 修复：先source set-env.sh设置环境变量，确保core.yaml配置文件能被找到
+	queryCmd := exec.Command("sh", "-c", "cd test-network && source set-env.sh && peer chaincode query -C mychannel -n novel-basic -c '{\"function\":\"GetAllNovels\",\"Args\":[]}'")
+	// 输出重定向，这就像把子程序的"嘴巴"连接到你的屏幕
+	queryCmd.Stdout = os.Stdout  // 将查询结果输出显示到屏幕
+	queryCmd.Stderr = os.Stderr  // 将错误信息显示到屏幕
+
+	if err := queryCmd.Run(); err != nil {
+		log.Printf("Warning: chaincode query failed: %v", err)
+	} else {
+		fmt.Println("Chaincode query completed successfully")
+	}
+
+
+	
+}
+
+
