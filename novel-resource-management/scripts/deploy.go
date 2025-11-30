@@ -35,10 +35,18 @@ func getEnv(key, defaultValue string) string {
 }
 
 func main() {
+	// 确定.env文件路径
+	envPath := "../.env"
+	if envPathFromEnv := os.Getenv("ENV_PATH"); envPathFromEnv != "" {
+		envPath = envPathFromEnv
+	}
+
 	// 加载.env文件
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Printf("警告: 无法加载.env文件: %v", err)
+	if err := godotenv.Load(envPath); err != nil {
+		log.Printf("警告: 无法加载.env文件: %v (路径: %s)", err, envPath)
 		log.Println("将使用默认环境变量")
+	} else {
+		log.Printf("✅ 成功加载.env文件: %s", envPath)
 	}
 
 	fmt.Println("🚀 开始自动化部署novel-resource-management...")
