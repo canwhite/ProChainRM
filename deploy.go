@@ -82,7 +82,7 @@ echo "=== Step 3: Creating channel ==="
 
 echo ""
 echo "=== Step 4: Setting environment and deploying chaincode ==="
-source set-env.sh
+source ./set-env.sh
 ./network.sh deployCC -ccn novel-basic -ccp ../novel-resource-events -ccl go -ccv 1.0 -cci InitLedger -ccep 'OR("Org1MSP.member","Org2MSP.member")'
 
 echo ""
