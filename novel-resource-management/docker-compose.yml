@@ -23,6 +23,7 @@ services:
       context: .
       dockerfile: Dockerfile
     # 自动的image name会是projectName_containerName
+    # user: "${UID:-1000}:${GID:-1000}" # if use in aws linux
     container_name: novel-api
     # | 策略             | 行为               |
     # |----------------|------------------|
