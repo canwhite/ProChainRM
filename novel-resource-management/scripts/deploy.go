@@ -351,7 +351,7 @@ func configureMongoDBReplicaSet(hostIP string) error {
 	mongoUser, mongoPass := getMongoConfig()
 
 	// 检查MongoDB连接
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// 使用mongosh命令检查连接（实际连接时使用真实密码）
