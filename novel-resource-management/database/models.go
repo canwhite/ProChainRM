@@ -38,3 +38,17 @@ type CreditHistory struct {
 	Timestamp   string `bson:"timestamp" json:"timestamp"`
 	NovelID     string `bson:"novelId,omitempty" json:"novelId,omitempty"`
 }
+
+// User MongoDB users 集合的结构体
+type User struct {
+	ID                string   `bson:"_id,omitempty" json:"id"`
+	Email             string   `bson:"email" json:"email"`
+	Username          string   `bson:"username" json:"username"`
+	PasswordHash      string   `bson:"passwordHash" json:"passwordHash"`
+	DeviceFingerprint string   `bson:"deviceFingerprint,omitempty" json:"deviceFingerprint,omitempty"`
+	IsActive          bool     `bson:"isActive" json:"isActive"`
+	Role              string   `bson:"role" json:"role"`
+	NovelIds          []string `bson:"novelIds,omitempty" json:"novelIds,omitempty"`
+	CreatedAt         string   `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	UpdatedAt         string   `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+}

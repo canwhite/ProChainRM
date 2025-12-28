@@ -104,6 +104,9 @@ func (s *Server) setupRoutes() {
 		//delete
 		users.DELETE("/:id",s.deleteUserCredit)
 
+		// 充值接口 - 接收第三方回调
+		users.POST("/recharge", s.rechargeUserTokens)
+
 		// 需要RSA加密的路由
 
 		encryptedUsers := users.Group("")
@@ -545,6 +548,53 @@ func (s *Server) consumeUserToken(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "consume token successfully",
 		"id":  userId,
+	})
+}
+
+// rechargeUserTokens 充值接口 - 接收第三方平台回调
+func (s *Server) rechargeUserTokens(c *gin.Context) {
+	// 接收完整的第三方回调数据
+	var req struct {
+		Title        string `json:"title"`
+		OrderSN      string `json:"order_sn"`
+		Email        string `json:"email" binding:"required"`
+		ActualPrice  int    `json:"actual_price"`
+		OrderInfo    string `json:"order_info"`
+		GoodID       string `json:"good_id"`
+		GoodName     string `json:"gd_name"`
+	}
+
+	//绑定JSON请求体，在if作用域中这个短变量声明是必须的
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "请求参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	log.Printf("📥 收到充值回调: email=%s, order_sn=%s, actual_price=%d, good_name=%s",
+		req.Email, req.OrderSN, req.ActualPrice, req.GoodName)
+
+	// 固定充值 150 token (忽略 actual_price)
+	const rechargeAmount = 150
+
+	// 调用 service 层方法
+	userId, newCredit, err := s.creditService.AddTokensByEmail(req.Email, rechargeAmount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "充值成功",
+		"userId":     userId,
+		"email":      req.Email,
+		"orderSn":    req.OrderSN,
+		"goodName":   req.GoodName,
+		"addedTokens": rechargeAmount,
+		"newCredit":  newCredit,
 	})
 }
 

@@ -143,9 +143,11 @@ func main(){
 		log.Println("  POST   /api/v1/users")
 		log.Println("  PUT    /api/v1/users/:id")
 		log.Println("  DELETE /api/v1/users/:id")
+		log.Println("  POST   /api/v1/users/recharge       <- 充值接口")
+		log.Println("  POST   /api/v1/users/:id/consume-token")
 		log.Println("  GET    /api/v1/events/listen")
 		log.Println("  GET    /health")
-		
+
 		if err := server.Start(":8080"); err != nil {
 			log.Fatalf("Failed to start server: %v", err)
 		}
