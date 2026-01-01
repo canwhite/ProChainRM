@@ -73,10 +73,9 @@ networks:
   # 内部网络
   novel-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 192.168.200.0/24
 
   # 外部Fabric网络（需要预先存在）
   fabric_test:
     external: true
+
+  # docker logs novel-api --tail 50
