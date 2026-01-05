@@ -1,7 +1,7 @@
 # ProChainRM - 项目全局认知文档
 
 **创建时间**: 2026-01-02
-**最后更新**: 2026-01-02
+**最后更新**: 2026-01-05
 
 ---
 
@@ -73,7 +73,17 @@ ProChainRM/
 ├── novel-resource-events/    # 链码实现
 │   └── chaincode/            # 智能合约逻辑
 ├── asset-transfer-basic/     # 官方示例代码
-└── docs/                     # 文档目录
+├── docs/                     # 文档目录
+├── refresh-mongodb.go        # MongoDB 副本集刷新工具 (Go)
+├── refresh.sh                # MongoDB 副本集刷新脚本 (便捷)
+├── README_MONGO_REFRESH.md   # MongoDB 刷新工具文档
+├── go.mod                    # Go 模块依赖
+├── go.sum                    # 依赖校验和
+└── schema/                   # 任务文档
+    ├── archive/              # 已完成任务归档
+    │   ├── task_recharge_260102.md
+    │   └── task_mongo_refresh_260105.md
+    └── task_*.md            # 进行中的任务
 ```
 
 ---
@@ -158,6 +168,16 @@ docker-compose up -d
 ---
 
 ## 重要变更记录
+
+### 2026-01-05
+- ✅ 完成 MongoDB 副本集刷新工具开发
+- 📄 任务归档: `schema/archive/task_mongo_refresh_260105.md`
+- 🔧 新增文件:
+  - `refresh-mongodb.go` - Go 源代码
+  - `refresh-mongo.sh` - 便捷脚本
+  - `README_MONGO_REFRESH.md` - 完整文档
+  - `go.mod`, `go.sum` - Go 模块依赖
+- 💡 核心功能: 自动检测局域网 IP、智能更新副本集配置、无需重启 Docker 容器
 
 ### 2026-01-02
 - ✅ 完成 recharge 接口全面调研
