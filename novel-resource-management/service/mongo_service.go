@@ -324,6 +324,41 @@ func (ms *MongoService) CreateIndexes() error {
 	}
 	log.Println("✅ credit_histories 集合的 userId-timestamp 索引创建成功")
 
+	// 第四步：为充值记录集合创建订单号唯一索引
+	// 为什么要用orderSn？因为充值接口需要幂等性保证，同一个订单不能重复处理
+	log.Println("💳 为 recharge_records 集合创建 orderSn 唯一索引...")
+	rechargeRecordsCollection := ms.db.GetCollection("recharge_records")
+
+	// SetUnique(true) 确保每个订单号只能有一条充值记录
+	_, err = rechargeRecordsCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.M{"orderSn": 1},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		return fmt.Errorf("❌ 创建 recharge_records 集合的 orderSn 索引失败: %v", err)
+	}
+	log.Println("✅ recharge_records 集合的 orderSn 索引创建成功")
+
+	// 第五步：为充值记录集合创建用户ID索引，方便查询用户充值历史
+	log.Println("👤 为 recharge_records 集合创建 userId 索引...")
+	_, err = rechargeRecordsCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.M{"userId": 1},
+	})
+	if err != nil {
+		return fmt.Errorf("❌ 创建 recharge_records 集合的 userId 索引失败: %v", err)
+	}
+	log.Println("✅ recharge_records 集合的 userId 索引创建成功")
+
+	// 第六步：为充值记录集合创建时间索引，方便按时间范围查询
+	log.Println("⏰ 为 recharge_records 集合创建 createdAt 索引...")
+	_, err = rechargeRecordsCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.M{"createdAt": -1}, // 降序，最新的记录在前
+	})
+	if err != nil {
+		return fmt.Errorf("❌ 创建 recharge_records 集合的 createdAt 索引失败: %v", err)
+	}
+	log.Println("✅ recharge_records 集合的 createdAt 索引创建成功")
+
 	log.Println("🎉 所有数据库索引创建完成！查询速度将会大幅提升")
 	return nil
 }

@@ -2,11 +2,18 @@ package main
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -25,6 +32,8 @@ type RechargeRequest struct {
 	OrderInfo   string `json:"order_info"`
 	GoodID      string `json:"good_id"`
 	GoodName    string `json:"gd_name"`
+	Timestamp   string `json:"timestamp"`   // 新增：时间戳
+	Signature   string `json:"signature"`   // 新增：HMAC 签名
 }
 
 // RechargeResponse 充值响应结构
@@ -36,6 +45,40 @@ type RechargeResponse struct {
 	GoodName   string `json:"goodName"`
 	AddedTokens int   `json:"addedTokens"`
 	NewCredit   int    `json:"newCredit"`
+}
+
+// getRechargeSecretKey 从环境变量获取充值接口的 HMAC 密钥
+func getRechargeSecretKey() string {
+	key := os.Getenv("RECHARGE_SECRET_KEY")
+	if key == "" {
+		log.Printf("⚠️ 警告: RECHARGE_SECRET_KEY 环境变量未设置，使用默认值")
+		key = "your-secret-key-change-in-production"
+	}
+	return key
+}
+
+// computeHMACSignature 计算 HMAC-SHA256 签名
+func computeHMACSignature(params map[string]string, secretKey string) string {
+	// 步骤1: 按字母序排序参数
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// 步骤2: 拼接参数
+	var parts []string
+	for _, k := range keys {
+		parts = append(parts, fmt.Sprintf("%s=%s", k, params[k]))
+	}
+	paramStr := strings.Join(parts, "&")
+
+	// 步骤3: 计算 HMAC-SHA256
+	h := hmac.New(sha256.New, []byte(secretKey))
+	h.Write([]byte(paramStr))
+	signature := hex.EncodeToString(h.Sum(nil))
+
+	return signature
 }
 
 // ErrorResponse 错误响应结构
@@ -144,6 +187,129 @@ func main() {
 	}
 	fmt.Println()
 
+	// 6. 幂等性测试（相同订单号重复请求）
+	fmt.Println("6. 测试幂等性（相同订单号重复请求）...")
+	idempotentOrderSN := fmt.Sprintf("TEST_IDEMPOTENT_%d", time.Now().Unix())
+
+	// 第一次请求
+	idempotentReq1 := RechargeRequest{
+		Title:       "幂等性测试",
+		OrderSN:     idempotentOrderSN,
+		Email:       TestEmail,
+		ActualPrice: 150,
+		OrderInfo:   "幂等性测试第一次",
+		GoodID:      "TEST_IDEMPOTENT",
+		GoodName:    "幂等性测试套餐",
+	}
+
+	credit1, err1 := sendRechargeRequest(idempotentReq1)
+	if err1 != nil {
+		fmt.Printf("❌ 第一次请求失败: %v\n", err1)
+	} else {
+		fmt.Printf("✅ 第一次请求成功: 积分=%d\n", credit1)
+
+		// 第二次请求（相同订单号）
+		idempotentReq2 := RechargeRequest{
+			Title:       "幂等性测试",
+			OrderSN:     idempotentOrderSN, // 相同订单号
+			Email:       TestEmail,
+			ActualPrice: 150,
+			OrderInfo:   "幂等性测试第二次",
+			GoodID:      "TEST_IDEMPOTENT",
+			GoodName:    "幂等性测试套餐",
+		}
+
+		credit2, err2 := sendRechargeRequest(idempotentReq2)
+		if err2 != nil {
+			fmt.Printf("❌ 第二次请求失败（不应该失败）: %v\n", err2)
+		} else if credit2 == credit1 {
+			fmt.Printf("✅ 幂等性验证通过: 两次返回相同积分=%d\n", credit2)
+		} else {
+			fmt.Printf("❌ 幂等性验证失败: 第一次积分=%d, 第二次积分=%d\n", credit1, credit2)
+		}
+	}
+	fmt.Println()
+
+	// 7. 签名错误测试
+	fmt.Println("7. 测试签名错误...")
+	wrongSigReq := RechargeRequest{
+		Title:       "签名错误测试",
+		OrderSN:     fmt.Sprintf("TEST_WRONG_SIG_%d", time.Now().Unix()),
+		Email:       TestEmail,
+		ActualPrice: 150,
+		OrderInfo:   "签名错误测试",
+		GoodID:      "TEST_WRONG_SIG",
+		GoodName:    "签名错误测试套餐",
+		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
+		Signature:   "this_is_a_wrong_signature_1234567890abcdef", // 错误签名
+	}
+
+	_, err = sendRechargeRequest(wrongSigReq)
+	if err != nil {
+		if bytes.Contains([]byte(err.Error()), []byte("签名验证失败")) {
+			fmt.Println("✅ 签名错误测试通过: 正确拒绝了错误签名")
+		} else {
+			fmt.Printf("❌ 签名错误测试异常: %v\n", err)
+		}
+	} else {
+		fmt.Println("❌ 签名错误测试失败: 错误签名应该被拒绝")
+	}
+	fmt.Println()
+
+	// 8. 时间戳过期测试（5分钟前）
+	fmt.Println("8. 测试时间戳过期（5分钟前）...")
+	expiredTimestamp := time.Now().Unix() - (5 * 60 + 10) // 5分10秒前
+	expiredReq := RechargeRequest{
+		Title:       "时间戳过期测试",
+		OrderSN:     fmt.Sprintf("TEST_EXPIRED_%d", time.Now().Unix()),
+		Email:       TestEmail,
+		ActualPrice: 150,
+		OrderInfo:   "时间戳过期测试",
+		GoodID:      "TEST_EXPIRED",
+		GoodName:    "时间戳过期测试套餐",
+		Timestamp:   strconv.FormatInt(expiredTimestamp, 10),
+		// 签名由 sendRechargeRequest 计算
+	}
+
+	_, err = sendRechargeRequest(expiredReq)
+	if err != nil {
+		if bytes.Contains([]byte(err.Error()), []byte("请求过期")) {
+			fmt.Println("✅ 时间戳过期测试通过: 正确拒绝了过期请求")
+		} else {
+			fmt.Printf("❌ 时间戳过期测试异常: %v\n", err)
+		}
+	} else {
+		fmt.Println("❌ 时间戳过期测试失败: 过期请求应该被拒绝")
+	}
+	fmt.Println()
+
+	// 9. 时间戳未来测试
+	fmt.Println("9. 测试时间戳未来...")
+	futureTimestamp := time.Now().Unix() + 300 // 5分钟后
+	futureReq := RechargeRequest{
+		Title:       "时间戳未来测试",
+		OrderSN:     fmt.Sprintf("TEST_FUTURE_%d", time.Now().Unix()),
+		Email:       TestEmail,
+		ActualPrice: 150,
+		OrderInfo:   "时间戳未来测试",
+		GoodID:      "TEST_FUTURE",
+		GoodName:    "时间戳未来测试套餐",
+		Timestamp:   strconv.FormatInt(futureTimestamp, 10),
+		// 签名由 sendRechargeRequest 计算
+	}
+
+	_, err = sendRechargeRequest(futureReq)
+	if err != nil {
+		if bytes.Contains([]byte(err.Error()), []byte("请求时间戳来自未来")) {
+			fmt.Println("✅ 时间戳未来测试通过: 正确拒绝了未来时间戳")
+		} else {
+			fmt.Printf("❌ 时间戳未来测试异常: %v\n", err)
+		}
+	} else {
+		fmt.Println("❌ 时间戳未来测试失败: 未来时间戳应该被拒绝")
+	}
+	fmt.Println()
+
 	fmt.Println("=========================================")
 	fmt.Println("✅ 测试完成!")
 	fmt.Println("=========================================")
@@ -152,8 +318,14 @@ func main() {
 	fmt.Println("  ✅ 服务状态检查")
 	fmt.Println("  ✅ 充值接口调用")
 	fmt.Println("  ✅ 积分验证")
-	fmt.Println("  ✅ 错误处理测试")
+	fmt.Println("  ✅ 错误处理测试（用户不存在）")
+	fmt.Println("  ✅ 幂等性测试")
+	fmt.Println("  ✅ 签名错误测试")
+	fmt.Println("  ✅ 时间戳过期测试")
+	fmt.Println("  ✅ 时间戳未来测试")
 	fmt.Println()
+	fmt.Println("安全验证功能测试完成!")
+	fmt.Println("所有安全机制（HMAC签名、时间戳验证、幂等性）均已覆盖")
 	fmt.Println("如需查看详细日志,请检查服务端输出")
 }
 
@@ -200,6 +372,32 @@ func getUserCredit(userID string) int {
 
 // sendRechargeRequest 发送充值请求
 func sendRechargeRequest(req RechargeRequest) (int, error) {
+	// 如果时间戳为空，生成当前时间戳
+	if req.Timestamp == "" {
+		req.Timestamp = strconv.FormatInt(time.Now().Unix(), 10)
+	}
+
+	// 计算 HMAC 签名（仅在签名未提供时）
+	if req.Signature == "" {
+		params := map[string]string{
+			"actual_price": strconv.Itoa(req.ActualPrice),
+			"email":        req.Email,
+			"order_sn":     req.OrderSN,
+			"timestamp":    req.Timestamp,
+		}
+
+		secretKey := getRechargeSecretKey()
+		req.Signature = computeHMACSignature(params, secretKey)
+	}
+
+	// 安全地显示签名（前16字符）
+	signaturePreview := req.Signature
+	if len(signaturePreview) > 16 {
+		signaturePreview = signaturePreview[:16] + "..."
+	}
+	log.Printf("📤 发送充值请求: orderSN=%s, timestamp=%s, signature=%s",
+		req.OrderSN, req.Timestamp, signaturePreview)
+
 	jsonData, err := json.Marshal(req)
 	if err != nil {
 		return 0, fmt.Errorf("序列化请求失败: %v", err)

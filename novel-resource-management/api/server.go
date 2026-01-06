@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin" //用gin
@@ -551,35 +552,88 @@ func (s *Server) consumeUserToken(c *gin.Context) {
 	})
 }
 
-// rechargeUserTokens 充值接口 - 接收第三方平台回调
+// rechargeUserTokens 充值接口 - 接收第三方平台回调（P0 安全加固版）
 func (s *Server) rechargeUserTokens(c *gin.Context) {
 	// 接收完整的第三方回调数据
 	var req struct {
-		Title        string `json:"title"`
-		OrderSN      string `json:"order_sn"`
-		Email        string `json:"email" binding:"required"`
-		ActualPrice  int    `json:"actual_price"`
-		OrderInfo    string `json:"order_info"`
-		GoodID       string `json:"good_id"`
-		GoodName     string `json:"gd_name"`
+		Title       string `json:"title"`
+		OrderSN     string `json:"order_sn" binding:"required"`
+		Email       string `json:"email" binding:"required"`
+		ActualPrice int    `json:"actual_price" binding:"required"`
+		OrderInfo   string `json:"order_info"`
+		GoodID      string `json:"good_id"`
+		GoodName    string `json:"gd_name"`
+		Timestamp   string `json:"timestamp" binding:"required"`   // 新增：时间戳
+		Signature   string `json:"signature" binding:"required"`   // 新增：HMAC 签名
 	}
 
-	//绑定JSON请求体，在if作用域中这个短变量声明是必须的
+	// 绑定JSON请求体
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("❌ 请求参数错误: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "请求参数错误: " + err.Error(),
 		})
 		return
 	}
 
-	log.Printf("📥 收到充值回调: email=%s, order_sn=%s, actual_price=%d, good_name=%s",
-		req.Email, req.OrderSN, req.ActualPrice, req.GoodName)
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	// P0-1: 安全验证 - HMAC 签名验证
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-	// 固定充值 150 token (忽略 actual_price)
-	const rechargeAmount = 150
+	// 1. 验证时间戳（防重放攻击）
+	// 添加详细时间戳日志
+	currentTime := time.Now().Unix()
+	log.Printf("🕐 时间戳验证开始: 请求时间戳=%s, 当前时间戳=%d", req.Timestamp, currentTime)
 
-	// 调用 service 层方法
-	userId, newCredit, err := s.creditService.AddTokensByEmail(req.Email, rechargeAmount)
+	timestampInt, err := strconv.ParseInt(req.Timestamp, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "时间戳格式错误",
+		})
+		return
+	}
+
+	// 计算时间差（秒）
+	timeDiff := currentTime - timestampInt
+	if err := service.ValidateTimestamp(timestampInt); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "时间戳验证失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 2. 验证 HMAC 签名
+	params := map[string]string{
+		"actual_price": strconv.Itoa(req.ActualPrice),
+		"email":        req.Email,
+		"order_sn":     req.OrderSN,
+		"timestamp":    req.Timestamp,
+	}
+
+	// 计算签名用于调试
+	// computedSignature := service.ComputeHMACSignature(params, service.GetRechargeSecretKey())
+	// log.Printf("📊 签名计算: 计算签名=%s, 接收签名=%s", computedSignature, req.Signature)
+
+	if !service.ValidateHMACSignature(params, req.Signature, service.GetRechargeSecretKey()) {
+		log.Printf("❌ HMAC 签名验证失败: orderSN=%s", req.OrderSN)
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "签名验证失败",
+		})
+		return
+	}
+	
+	log.Printf("✅ 安全验证通过: orderSN=%s", req.OrderSN)
+
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	// P0-2: 幂等性保证 + 充值逻辑
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+	userId, newCredit, err := s.creditService.AddTokensByEmailWithIdempotency(
+		req.Email,
+		req.OrderSN,
+		req.ActualPrice,
+	)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -588,13 +642,12 @@ func (s *Server) rechargeUserTokens(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":    "充值成功",
-		"userId":     userId,
-		"email":      req.Email,
-		"orderSn":    req.OrderSN,
-		"goodName":   req.GoodName,
-		"addedTokens": rechargeAmount,
-		"newCredit":  newCredit,
+		"message":  "充值成功",
+		"userId":   userId,
+		"email":    req.Email,
+		"orderSn":  req.OrderSN,
+		"goodName": req.GoodName,
+		"newCredit": newCredit,
 	})
 }
 
