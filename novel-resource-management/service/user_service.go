@@ -541,6 +541,9 @@ func ComputeHMACSignature(params map[string]string, secretKey string) string {
 	h.Write([]byte(paramStr))
 	
 	// 将哈希值转可传输字符串
+	//  |------------|------------------------------------|
+     // | h.Sum() 作用 | 哈希计算的"最终结算"，返回计算结果                 |
+	 // | 参数 nil     | 表示"只返回哈希值，不追加任何数据"  
 	signature := hex.EncodeToString(h.Sum(nil))
 
 	return signature
