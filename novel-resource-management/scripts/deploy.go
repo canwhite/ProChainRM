@@ -557,8 +557,8 @@ func runDockerDeploy() error {
 	// 构建并启动服务
 	fmt.Println("🔨 构建并启动服务...")
 
-	// 执行docker-compose up -d
-	cmd := exec.Command("docker-compose", "up", "-d")
+	// 执行docker-compose up -d --build
+	cmd := exec.Command("docker-compose", "up", "-d","--build")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
