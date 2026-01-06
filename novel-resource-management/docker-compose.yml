@@ -43,6 +43,7 @@ services:
       - FABRIC_CERT_PATH=/app/test-network/organizations/peerOrganizations/org1.example.com
       - FABRIC_PEER_HOST=peer0.org1.example.com
       - FABRIC_PEER_PORT=7051
+      - RECHARGE_SECRET_KEY=${RECHARGE_SECRET_KEY:-your-secret-key-change-in-production}
     #宿主机对外的是8080:docker端口，可以理解为钥匙：锁
     ports:
       - "8080:8080"

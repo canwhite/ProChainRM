@@ -170,6 +170,26 @@ docker-compose up -d
 ## 重要变更记录
 
 ### 2026-01-05
+#### 1. Recharge 接口 P0 安全修复
+- ✅ 完成 recharge 接口的两个 P0 级别安全问题修复
+- 📄 任务归档: `schema/archive/task_p0_fix_260105_144625.md`
+- 🔧 主要实现:
+  - **HMAC-SHA256 签名验证**: `ComputeHMACSignature()` 和 `ValidateHMACSignature()`
+  - **时间戳验证（防重放攻击）**: `ValidateTimestamp()`，5分钟有效期
+  - **充值记录幂等性保证**: `RechargeRecord` 结构体，订单号唯一索引
+  - **数据库索引配置**: 为 `recharge_records` 集合添加订单号、用户ID、时间索引
+- 💡 安全特性: 签名防篡改、防重放攻击、幂等性保证、环境变量密钥配置
+
+#### 2. 安全充值接口测试脚本升级
+- ✅ 完成 recharge 接口安全改造后的完整测试脚本
+- 📄 任务归档: `schema/archive/task_test_recharge_260105_155035.md`
+- 🔧 主要改造: `test_recharge.go`
+  - 新增 `timestamp` 和 `signature` 字段支持
+  - 实现 HMAC-SHA256 签名计算函数
+  - 添加5个新测试场景：幂等性、签名错误、时间戳过期/未来验证
+- 💡 核心功能: 自动签名计算、多场景安全验证、向后兼容设计
+
+#### 3. MongoDB 副本集刷新工具开发
 - ✅ 完成 MongoDB 副本集刷新工具开发
 - 📄 任务归档: `schema/archive/task_mongo_refresh_260105.md`
 - 🔧 新增文件:
@@ -178,6 +198,20 @@ docker-compose up -d
   - `README_MONGO_REFRESH.md` - 完整文档
   - `go.mod`, `go.sum` - Go 模块依赖
 - 💡 核心功能: 自动检测局域网 IP、智能更新副本集配置、无需重启 Docker 容器
+
+### 2026-01-06
+#### 1. 批量任务归档整理
+- ✅ 归档多个已完成或进行中的任务文档
+- 📄 任务归档列表:
+  - `task_recharge_upgrade_260104_161555.md` - Recharge 接口升级方案设计
+  - `task_recharge_research_260105_162659.md` - 充值接口安全验证（HMAC/时间戳/幂等）调研
+  - `task_schema_gitignore_260105_163713.md` - Schema目录Git追踪配置调整
+  - `task_check_docker_logs_260105_173302.md` - Docker日志交易记录检查
+  - `task_fix_recharge_260105_180640.md` - 充值Token失败问题修复
+  - `task_log_analysis_260105_204847.md` - 日志分析问题定位
+  - `task_secret_key_260105_213129.md` - RECHARGE_SECRET_KEY环境变量安全分析
+  - `task_mongo_research_260106_123440.md` - MongoDB库、副本集原理详细调研
+- 🔍 归档状态: 已完成或进行中的任务统一归档管理
 
 ### 2026-01-02
 - ✅ 完成 recharge 接口全面调研
