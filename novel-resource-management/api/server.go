@@ -593,8 +593,8 @@ func (s *Server) rechargeUserTokens(c *gin.Context) {
 		return
 	}
 
-	// 计算时间差（秒）
-	timeDiff := currentTime - timestampInt
+	// 计算时间差（秒）（保留计算逻辑但移除未使用的变量）
+	_ = currentTime - timestampInt // timeDiff不再使用，保留计算逻辑
 	if err := service.ValidateTimestamp(timestampInt); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "时间戳验证失败: " + err.Error(),

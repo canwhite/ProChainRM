@@ -509,16 +509,6 @@ func GetRechargeSecretKey() string {
 // ComputeHMACSignature 计算 HMAC-SHA256 签名（导出函数）
 func ComputeHMACSignature(params map[string]string, secretKey string) string {
 
-
-	// 显示密钥摘要（不显示完整密钥）
-	var keySummary string
-	if len(secretKey) > 8 {
-		keySummary = secretKey[:4] + "..." + secretKey[len(secretKey)-4:]
-	} else {
-		keySummary = "***"
-	}
-
-
 	// 步骤1: 按字母序排序参数
 	keys := make([]string, 0, len(params))
 	for k := range params {

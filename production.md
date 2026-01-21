@@ -199,6 +199,17 @@ docker-compose up -d
   - `go.mod`, `go.sum` - Go 模块依赖
 - 💡 核心功能: 自动检测局域网 IP、智能更新副本集配置、无需重启 Docker 容器
 
+### 2026-01-19
+#### 1. Fabric网络部署权限错误修复
+- ✅ 修复`deploy.go`部署Fabric网络时的权限和卷清理错误
+- 📄 任务归档: `schema/task_deploy_error_260119_163021.md`
+- 📄 修复总结: `schema/deploy_error_fix_summary_260119.md`
+- 🔧 主要修复:
+  - **文件权限问题**: `organizations/`和`channel-artifacts/`目录文件所有者从`root`改为当前用户
+  - **Docker卷名称不匹配**: 注释掉`network.sh`中硬编码删除`docker_`前缀卷的命令（第461行）
+  - **容器权限问题**: 修改所有`busybox`容器命令，添加`-u $(id -u):$(id -g)`参数，避免创建`root`拥有的文件
+- 💡 影响: 解决`rm: can't remove ... Operation not permitted`和`Error: No such volume`错误，确保部署流程正常
+
 ### 2026-01-06
 #### 1. 批量任务归档整理
 - ✅ 归档多个已完成或进行中的任务文档

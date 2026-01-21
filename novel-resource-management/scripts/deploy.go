@@ -19,6 +19,8 @@
 //   - 备用IP设置为192.168.1.100
 //   - 支持eth0、ens33、enp0s3等常见Linux网络接口
 //
+//go:build deploy
+
 package main
 
 import (
