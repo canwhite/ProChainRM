@@ -13,11 +13,18 @@ COPY go.mod go.sum ./
 # 下载依赖
 RUN go mod download
 
-# 复制源代码
-COPY . .
+# 复制源代码（精细化复制，提高缓存利用率）
+COPY *.go ./
+COPY api/ api/
+COPY service/ service/
+COPY middleware/ middleware/
+COPY database/ database/
+COPY network/ network/
+COPY utils/ utils/
+COPY scripts/ scripts/
 
 # 编译应用
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o novel-api .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o novel-api .
 
 # 运行阶段，将build和run区分开
 FROM alpine:latest
@@ -31,8 +38,10 @@ ENV TZ=Asia/Shanghai
 # 创建非root用户，在Docker容器里创建一个普通用户，而不是用root用户运行应用。
 # 创建一个名为"appgroup"的用户组
 # 创建一个名为"appuser"的用户，并加入appgroup组
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+# 另外这里的id设置只是为了备份，会被compose的覆盖的
+# 之前是1001，想了下不如直接1000来的直接
+RUN addgroup -g 1000 -S appgroup && \
+    adduser -u 1000 -S appuser -G appgroup
 
 # 设置工作目录
 WORKDIR /app
@@ -40,8 +49,8 @@ WORKDIR /app
 # 从构建阶段复制二进制文件，  "从厨房（builder）把做好的菜（novel-api）端到餐厅（alpine）"
 COPY --from=builder /app/novel-api .
 
-# 复制.env文件（如果存在），同上
-COPY --from=builder /app/.env .
+# 复制.env文件（如果存在）
+COPY .env .
 
 # 创建证书目录
 #  "把宿主机的 ../test-network 目录挂载到容器的 /app/test-network 目录"，主要是为了避免证书复制

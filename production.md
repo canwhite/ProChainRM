@@ -199,6 +199,17 @@ docker-compose up -d
   - `go.mod`, `go.sum` - Go 模块依赖
 - 💡 核心功能: 自动检测局域网 IP、智能更新副本集配置、无需重启 Docker 容器
 
+### 2026-01-21
+#### 1. Docker构建性能优化
+- ✅ 优化`docker build`在go build步骤缓慢的问题
+- 📄 任务文档: `schema/task_docker_build_slow_260121_154225.md`
+- 🔧 主要优化:
+  - **移除`-a`标志**: 允许Go使用编译缓存，避免强制重新编译所有依赖
+  - **移除`-installsuffix cgo`**: CGO_ENABLED=0时不需要此标志
+  - **添加`-ldflags="-s -w"`**: 减小二进制文件大小约20-30%
+  - **精细化COPY指令**: 只复制必要的源代码文件，提高Docker层缓存利用率
+- 💡 预期效果: 后续构建时间减少70%以上，镜像大小减小，构建缓存更有效
+
 ### 2026-01-19
 #### 1. Fabric网络部署权限错误修复
 - ✅ 修复`deploy.go`部署Fabric网络时的权限和卷清理错误
@@ -236,6 +247,13 @@ docker-compose up -d
 1. **DNS 解析**: 需要在 `/etc/hosts` 添加 `127.0.0.1 orderer.example.com`
 2. **端口占用**: 9443 端口被占用会导致 createChannel 卡住
 3. **超时配置**: 某些操作需要较长超时时间 (如 CommitTimeout 2分钟)
+4. **Docker 镜像拉取超时**: 在中国大陆地区拉取 `golang:1.23-alpine` 等Docker镜像可能超时
+   - **解决方案**:
+     - 已配置镜像加速器：`~/.docker/daemon.json`
+     - 添加阿里云、中国官方等镜像源
+     - 需要重启Docker服务生效
+     - 备用方案：使用 `golang:1.22-alpine` 或预拉取镜像
+   - **相关任务**: `schema/task_docker_error_260122_135746.md`
 
 ---
 

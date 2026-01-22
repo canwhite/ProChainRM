@@ -54,4 +54,4 @@ docs/
 *.md
 
 # Scripts
-scripts/
+# scripts/  # 注释掉，因为Dockerfile需要复制scripts目录

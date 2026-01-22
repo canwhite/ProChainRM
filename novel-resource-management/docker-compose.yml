@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # MongoDB副本集自动配置服务，但是这里因为是在docker容器中，所以我们得到的是神奇网址
@@ -23,7 +23,8 @@ services:
       context: .
       dockerfile: Dockerfile
     # 自动的image name会是projectName_containerName
-    # user: "${UID:-1000}:${GID:-1000}" # if use in aws linux
+    # 如果本机用户存在的时候用本机用户ID，不存在的时候用1000
+    user: "${UID:-1000}:${GID:-1000}" # if use in aws linux
     container_name: novel-api
     # | 策略             | 行为               |
     # |----------------|------------------|
@@ -48,11 +49,11 @@ services:
     ports:
       - "8080:8080"
     volumes:
-        # 挂载Fabric证书文件
-        - ../test-network:/app/test-network:ro
-        # 挂载RSA密钥文件
-        - ./security:/app/security:ro
-      
+      # 挂载Fabric证书文件
+      - ../test-network:/app/test-network:ro
+      # 挂载RSA密钥文件
+      - ./security:/app/security:ro
+
     extra_hosts:
       # 允许容器访问宿主机服务
       - "host.docker.internal:host-gateway"
@@ -64,7 +65,15 @@ services:
     #   mongodb-config:
     #     condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
